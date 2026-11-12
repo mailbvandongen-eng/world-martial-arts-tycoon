@@ -548,6 +548,31 @@ suite("simulation: planning respects capacity and patience", function()
 	eq(plan.outcome, "leave", "no trainer -> visitor leaves")
 end)
 
+suite("simulation: most visitors are beginners, black belts are rare", function()
+	local d = Schema.validate(Schema.defaults())
+	d.mastery.karate = { rank = 9, xp = 0 }
+	d.reputation = 50000
+	local sim = Simulation.new("smalltown", NOW)
+	local rng = RNG.new(77)
+	local counts, n = {}, 0
+	for i = 1, 3000 do
+		local plan = Simulation.planVisit(d, sim, { now = NOW + i * 60 }, rng)
+		if plan.interest == "karate" and plan.rank then
+			counts[plan.rank] = (counts[plan.rank] or 0) + 1
+			n = n + 1
+		end
+	end
+	local low = (counts[1] or 0) + (counts[2] or 0) + (counts[3] or 0)
+	local black = 0
+	for r = 7, 9 do
+		black = black + (counts[r] or 0)
+	end
+	io.write(string.format("    %d karate visitors: white-orange %d%%, black belt %d%%\n", n, math.floor(low * 100 / n), math.floor(black * 100 / n)))
+	check(low / n > 0.6, "most karate visitors wear white, yellow or orange belts")
+	check(black / n < 0.1, "black belts are rare")
+	check(black > 0, "black belts do appear at a high-level academy")
+end)
+
 suite("simulation: business day pays dues and charges expenses", function()
 	local d = Schema.validate(Schema.defaults())
 	d.cash = 1000
@@ -734,8 +759,16 @@ suite("appearance: every discipline looks like its martial art", function()
 		check(t.aura ~= nil, d.id .. " legendary trainer has an aura")
 		check(t.body ~= "kid", d.id .. " trainer is an adult")
 	end
+	-- karate: always a white gi; the belt shows the grade
 	local k = Appearance.describe({ seed = 1, discipline = "karate", role = "trainer" })
-	eq(k.colors.Chest[1], 25, "karate master wears a black gi")
+	eq(k.colors.Chest[1], 245, "karate sensei wears a white gi")
+	eq(kinds(k).belt.color[1], 25, "karate sensei wears a black belt")
+	local master = Appearance.describe({ seed = 2, discipline = "karate", role = "trainer", rarity = "legendary" })
+	check(kinds(master).belt.stripe ~= nil, "legendary karate master wears a dan-striped black belt")
+	for seed = 1, 30 do
+		local st = Appearance.describe({ seed = seed, discipline = "karate", role = "student", rank = 1 + seed % 9 })
+		eq(st.colors.Chest[1], 245, "karate student gi is white")
+	end
 	-- variety: 40 karate students are not identical
 	local seen = {}
 	local distinct = 0

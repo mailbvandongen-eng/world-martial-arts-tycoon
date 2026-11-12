@@ -223,6 +223,13 @@ function Appearance.describe(opts)
 		local r = rank
 		if role == "trainer" then
 			r = math.max(r, outfit.beltRankMin or #disc.ranks - 2)
+			-- famous masters wear the highest grades (e.g. 2nd/3rd dan)
+			local rarity = opts.rarity and Trainers.rarityById[opts.rarity]
+			if rarity and rarity.order >= 5 then
+				r = #disc.ranks
+			elseif rarity and rarity.order == 4 then
+				r = math.max(r, #disc.ranks - 1)
+			end
 		end
 		r = Util.clamp(r, 1, #disc.ranks)
 		local rk = disc.ranks[r]

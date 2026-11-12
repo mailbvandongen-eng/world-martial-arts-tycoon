@@ -52,7 +52,7 @@ Disciplines.list = {
 		extraClass = "Advanced Karate",
 		outfit = {
 			student = { top = "gi", topColor = C.white, bottom = "pants", bottomColor = C.white, belt = true, feet = "bare" },
-			trainer = { top = "gi", topColor = C.black, trim = C.red, bottom = "pants", bottomColor = C.black, belt = true, beltRankMin = 7, feet = "bare" },
+			trainer = { top = "gi", topColor = C.white, bottom = "pants", bottomColor = C.white, belt = true, beltRankMin = 7, feet = "bare" },
 		},
 		bodyTypes = { average = 4, slim = 3, athletic = 2, kid = 2, heavy = 1 },
 		room = {

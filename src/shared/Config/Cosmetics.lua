@@ -11,9 +11,9 @@ local Cosmetics = {}
 
 Cosmetics.list = {
 	-- Outfits
-	{ id = "outfit_karate_white", name = "Karate Gi", kind = "outfit", source = "default", style = { top = "gi", color = { 245, 245, 240 }, belt = { 25, 25, 28 } } },
-	{ id = "outfit_karate_red", name = "Crimson Karate Gi", kind = "outfit", source = "event", style = { top = "gi", color = { 170, 30, 35 }, belt = { 25, 25, 28 } } },
-	{ id = "outfit_karate_black", name = "Black Gi", kind = "outfit", source = "gems", price = 250, style = { top = "gi", color = { 25, 25, 28 }, belt = { 190, 30, 35 } } },
+	{ id = "outfit_karate_white", name = "Karate Gi", kind = "outfit", source = "default", style = { top = "gi", color = { 245, 245, 240 }, belt = { 245, 245, 240 } } },
+	{ id = "outfit_karate_red", name = "Kata Champion Gi", kind = "outfit", source = "event", style = { top = "gi", color = { 245, 245, 240 }, belt = { 190, 30, 35 } } },
+	{ id = "outfit_karate_black", name = "Black Belt Gi", kind = "outfit", source = "gems", price = 250, style = { top = "gi", color = { 245, 245, 240 }, belt = { 25, 25, 28 } } },
 	{ id = "outfit_boxing_red", name = "Boxing Champ Kit", kind = "outfit", source = "gems", price = 200, style = { top = "none", shorts = { 190, 30, 35 }, gloves = { 190, 30, 35 } } },
 	{ id = "outfit_boxing_gold", name = "Golden Boxing Kit", kind = "outfit", source = "event", style = { top = "none", shorts = { 212, 175, 55 }, gloves = { 212, 175, 55 } } },
 	{ id = "outfit_muaythai_red", name = "Muay Thai Shorts", kind = "outfit", source = "gems", price = 200, style = { top = "none", shorts = { 220, 40, 60 }, armbands = true } },

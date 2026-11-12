@@ -317,7 +317,10 @@ function Simulation.planVisit(d, sim, ctx, rng)
 		local m = d.mastery[discId]
 		local maxRank = m and m.rank or 1
 		local bias = (category.order - 1) / (#Customers.list - 1)
-		plan.rank = Util.clamp(1 + math.floor(rng:next() * maxRank * (0.5 + bias)), 1, maxRank)
+		-- skewed: most visitors are beginners (white/yellow), high grades are rare
+		-- and mostly worn by advanced, professional and VIP visitors
+		local u = rng:next() ^ 2.5
+		plan.rank = Util.clamp(1 + math.floor(u * maxRank * (0.6 + 0.6 * bias)), 1, maxRank)
 	end
 
 	-- payment (credited at tEnd)
