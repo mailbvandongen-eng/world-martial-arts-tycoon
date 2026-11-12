@@ -6,6 +6,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Format = require(Shared.Modules.Format)
 local Progression = require(Shared.Config.Progression)
 local Cities = require(Shared.Config.Cities)
+local Activities = require(Shared.Config.Activities)
 
 local Kit = require(script.Parent.Parent.Kit)
 local State = require(script.Parent.Parent.Parent.Controllers.State)
@@ -26,11 +27,41 @@ return {
 	title = "Statistics",
 	width = 880,
 	height = 600,
-	build = function(body)
-		local scroll = Kit.scroll(body, { Size = UDim2.fromScale(1, 1) })
-		Kit.grid(scroll, UDim2.fromOffset(200, 86), 10)
+	build = function(body, args)
+		local tab = args.tab or "stats"
+		local scroll = Kit.scroll(body, { Position = UDim2.fromOffset(0, 44), Size = UDim2.new(1, 0, 1, -44) })
+		local grid = Kit.grid(scroll, UDim2.fromOffset(200, 86), 10)
+		local listLayout
+		local function renderAchievements()
+			local d = State.data
+			grid.Parent = nil
+			if not listLayout then
+				listLayout = Kit.list(scroll, 6)
+			end
+			listLayout.Parent = scroll
+			local done = 0
+			for i, a in ipairs(Activities.achievements) do
+				local got = d.achievements[a.id] == true
+				if got then
+					done = done + 1
+				end
+				local card = Kit.card(scroll, 54, i + 1)
+				Kit.label(card, (got and "🏅 " or "◻ ") .. a.name, { Position = UDim2.fromOffset(14, 4), Size = UDim2.new(0.5, 0, 0, 24), TextSize = 16, Font = Kit.fontBlack, TextColor3 = got and C.gold or C.text })
+				Kit.label(card, a.text, { Position = UDim2.fromOffset(14, 28), Size = UDim2.new(0.7, 0, 0, 20), TextSize = 13, TextColor3 = C.muted })
+				Kit.label(card, got and "Unlocked" or ("+◆" .. a.gems), { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -14, 0, 0), Size = UDim2.fromOffset(120, 54), TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = got and C.good or C.gems, TextSize = 15 })
+			end
+			Kit.label(scroll, done .. " / " .. #Activities.achievements .. " achievements unlocked", { Size = UDim2.new(1, -8, 0, 26), TextColor3 = C.gold, Font = Kit.fontBlack, LayoutOrder = 0 })
+		end
 		local function render()
 			Kit.clear(scroll)
+			if tab == "achievements" then
+				renderAchievements()
+				return
+			end
+			if listLayout then
+				listLayout.Parent = nil
+			end
+			grid.Parent = scroll
 			local d, x = State.data, State.derived
 			local dayFactor = 3600 / Progression.DAY_SECONDS
 			local expHour = x.expenses.total * dayFactor
@@ -56,12 +87,22 @@ return {
 			tile(scroll, 19, "DISCIPLINES MASTERED", tostring(x.masteredCount))
 			tile(scroll, 20, "REBIRTHS", tostring(d.rebirths), C.gold, d.flags.prestigeTitle)
 			tile(scroll, 21, "PLAY TIME", Format.time(s.playSeconds))
+			tile(scroll, 23, "TOURNAMENT WINS", tostring(s.tournamentWins or 0), C.gold)
+			tile(scroll, 24, "CHALLENGES PLAYED", tostring(s.miniGames or 0))
+			tile(scroll, 25, "STUDENT PROMOTIONS", tostring(s.graduations or 0))
 			tile(scroll, 22, "ACADEMY RATING", d.ratings.count > 0 and string.format("%.1f ★ (%d)", d.ratings.sum / d.ratings.count, d.ratings.count) or "—", C.gold)
 			if x.memoryMode then
 				tile(scroll, 0, "⚠ STUDIO MODE", "Not saving", C.bad, "Enable API access to test saving")
 			end
 		end
-		render()
+		local _, select = Kit.tabs(body, {
+			{ id = "stats", name = "Statistics", width = 140 },
+			{ id = "achievements", name = "Achievements", width = 150 },
+		}, function(id)
+			tab = id
+			render()
+		end)
+		select(tab)
 		return render
 	end,
 }

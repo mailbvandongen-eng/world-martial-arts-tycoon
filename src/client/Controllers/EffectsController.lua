@@ -104,6 +104,24 @@ handlers.championship = function(p)
 	audio.play("announce")
 	burst(Color3.fromRGB(255, 200, 60), 80)
 end
+handlers.graduation = function(p)
+	local disc = Disciplines.byId[p.discipline]
+	ui.toast("🎓 " .. p.name .. " earned the " .. p.rankName .. (disc and (" in " .. disc.name) or "") .. "!")
+	audio.play("rankup")
+end
+handlers.achievement = function(p)
+	ui.banner("ACHIEVEMENT!", p.name .. "  •  +◆" .. p.gems, Color3.fromRGB(120, 200, 255))
+	audio.play("unlock")
+	burst(Color3.fromRGB(120, 200, 255), 50)
+end
+handlers.tournament = function(p)
+	local title = p.place == 1 and "🏆 CHAMPIONS!" or p.place == 2 and "🥈 RUNNER-UP" or p.place == 3 and "🥉 SEMI-FINAL" or "QUARTER-FINAL"
+	ui.banner(title, p.name .. "  •  +" .. Format.cash(p.cash) .. (p.gems > 0 and ("  +◆" .. p.gems) or "") .. "  +" .. p.reputation .. " rep", Color3.fromRGB(255, 200, 60))
+	audio.play(p.place == 1 and "announce" or "cash")
+	if p.place == 1 then
+		burst(Color3.fromRGB(255, 200, 60), 90)
+	end
+end
 handlers.day = function(p)
 	local net = p.dues + p.passive - p.expenses
 	if p.unpaid > 0 then

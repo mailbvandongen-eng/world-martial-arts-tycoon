@@ -20,6 +20,7 @@ local Events = require(Shared.Config.Events)
 local Academy = require(script.Parent.Academy)
 local Economy = require(script.Parent.Economy)
 local TrainerGen = require(script.Parent.TrainerGen)
+local Activities = require(script.Parent.Activities)
 
 local Simulation = {}
 
@@ -225,6 +226,14 @@ function Simulation.planVisit(d, sim, ctx, rng)
 	}
 	if category.celebrity then
 		plan.name = rng:pick(Customers.celebrityNames)
+	elseif Disciplines.byId[interest] then
+		-- a returning member from the student roster
+		local student = Activities.returningStudent(d, rng, interest)
+		if student then
+			plan.studentId = student.id
+			plan.studentName = student.name
+			plan.seed = student.seed
+		end
 	end
 
 	-- reception desk service
@@ -333,6 +342,9 @@ function Simulation.planVisit(d, sim, ctx, rng)
 		-- and mostly worn by advanced, professional and VIP visitors
 		local u = rng:next() ^ 2.5
 		plan.rank = Util.clamp(1 + math.floor(u * maxRank * (0.6 + 0.6 * bias)), 1, maxRank)
+		if plan.studentId and d.students[plan.studentId] then
+			plan.rank = d.students[plan.studentId].rank
+		end
 	end
 
 	-- payment (credited at tEnd)
@@ -471,6 +483,30 @@ function Simulation.settleOne(d, sim, ctx, rng, plan)
 		if branch.members < cap then
 			branch.members = branch.members + 1
 			res.newMember = true
+		end
+	end
+	-- per-discipline statistics
+	local ds = d.discStats[plan.interest]
+	if not ds then
+		ds = { served = 0, revenue = 0 }
+		d.discStats[plan.interest] = ds
+	end
+	ds.served = ds.served + 1
+	ds.revenue = ds.revenue + kept
+	-- student profiles: progress for returning students, new profiles for new members
+	if Disciplines.byId[plan.interest] then
+		local student = plan.studentId and d.students[plan.studentId]
+		if student then
+			local newRank = Activities.studentAttended(d, student, plan.mastery or 4, plan.satisfaction)
+			if newRank then
+				local disc = Disciplines.byId[student.discipline]
+				res.graduation = { name = student.name, rank = newRank, rankName = disc.ranks[newRank].name, discipline = student.discipline, planId = plan.id, slot = plan.slot }
+			end
+		elseif res.newMember or (plan.satisfaction >= 55 and rng:chance(0.25)) then
+			-- a visitor who enjoyed the class signs up as a regular student
+			local s = Activities.newStudent(d, rng, plan.interest, plan.seed)
+			s.rank = plan.rank or 1
+			res.newStudent = s.name
 		end
 	end
 	-- event points

@@ -19,6 +19,7 @@ AudioController.init()
 UI.init()
 UI.audio = AudioController
 UI.emotes = EmoteController
+UI.npc = NPCController
 for _, module in ipairs(UIFolder.Panels:GetChildren()) do
 	if module:IsA("ModuleScript") then
 		UI.register(string.lower(module.Name), require(module))

@@ -10,7 +10,7 @@
 local Remotes = {}
 
 Remotes.FUNCTIONS = { "Action" }
-Remotes.EVENTS = { "State", "Plots", "Visitors", "Notify", "Emote" }
+Remotes.EVENTS = { "State", "Plots", "Visitors", "Notify", "Emote", "Tournament" }
 
 function Remotes.setup()
 	local ReplicatedStorage = game:GetService("ReplicatedStorage")

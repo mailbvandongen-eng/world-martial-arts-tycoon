@@ -888,6 +888,121 @@ suite("outfits: rank outfits have clothing for every rank", function()
 	check(d.cosmetics.owned.outfit_judo, "judogi owned after unlocking judo")
 end)
 
+suite("activities: challenges are scored by the server and capped", function()
+	local Act = H.load("ServerScriptService/Server/Domain/Activities")
+	local Cfg = H.load("ReplicatedStorage/Shared/Config/Activities")
+	local d = Schema.validate(Schema.defaults())
+	local ok, ch, prompts = Act.startChallenge(d, "karate", 1000, 42)
+	check(ok and #prompts == Cfg.games.karate.prompts, "karate challenge starts")
+	local again = Act.startChallenge(d, "karate", 1005, 43)
+	check(not again, "cooldown between challenges")
+	check(not Act.startChallenge(d, "boxing", 2000, 1), "boxing challenge needs boxing unlocked")
+	-- perfect answers
+	local perfect = {}
+	for i, p in ipairs(prompts) do
+		perfect[i] = { i = i, a = p.a, t = p.t + 0.05 }
+	end
+	eq(Act.scoreChallenge(ch, perfect).score, 100, "perfect run scores 100")
+	-- wrong actions, duplicates and garbage score nothing
+	local junk = { { i = 1, a = "Nope", t = prompts[1].t }, { i = 99, a = "Punch", t = 1 }, "x", { i = 2, a = prompts[2].a, t = 0 / 0 } }
+	eq(Act.scoreChallenge(ch, junk).score, 0, "invalid answers score 0")
+	local dup = {}
+	for n = 1, 50 do
+		dup[n] = { i = 1, a = prompts[1].a, t = prompts[1].t }
+	end
+	check(Act.scoreChallenge(ch, dup).score <= 10, "spamming one prompt does not score")
+	-- timing validation
+	check(not Act.finishChallenge(d, ch, perfect, ch.startAt + 1, 1), "cannot submit before the end")
+	local ok2, res = Act.finishChallenge(d, ch, perfect, ch.startAt + ch.duration, 1)
+	check(ok2 and res.cash > 0 and res.mastery > 0, "rewards granted")
+	check(res.cash <= Formulas.rewardCashUnit(d.level), "challenge cash stays small")
+	-- daily cap
+	d.minigame.plays = Cfg.GAME_DAILY_FULL
+	local _, res2 = Act.finishChallenge(d, ch, perfect, ch.startAt + ch.duration, 1)
+	check(res2.reduced and res2.cash < res.cash, "reduced rewards after the daily cap")
+end)
+
+suite("activities: tournaments are simulated fairly", function()
+	local Act = H.load("ServerScriptService/Server/Domain/Activities")
+	local Cfg = H.load("ReplicatedStorage/Shared/Config/Activities")
+	local t = Act.tournamentAt(NOW + 10)
+	check(t.regEnd > t.startAt and t.rounds[3] < t.nextAt, "schedule fits in its slot")
+	local d = Schema.validate(Schema.defaults())
+	d.cash = 1e9
+	check(Act.strength(d, "karate") > 0, "karate academy has strength")
+	eq(Act.strength(d, "sumo"), 0, "no strength in a locked discipline")
+	local kt
+	for k = 0, 20 do
+		local tt = Act.tournamentAt(NOW + k * Cfg.TOURNAMENT_EVERY)
+		if tt.discipline == "karate" then
+			kt = tt
+		end
+	end
+	local ok = Act.enterTournament(d, kt, kt.startAt + 5)
+	check(ok, "enter the karate championship")
+	check(not Act.enterTournament(d, kt, kt.startAt + 6), "no double entry")
+	check(not Act.enterTournament(d, Act.tournamentAt(kt.nextAt), kt.nextAt + Cfg.TOURNAMENT_REGISTRATION + 1), "registration closes")
+	-- strong academies win more often
+	local wins = 0
+	for seed = 1, 400 do
+		local bracket = Act.fillBracket({ { name = "Me", strength = 120, me = true } }, seed)
+		eq(#bracket, Cfg.TOURNAMENT_SIZE, "bracket filled")
+		local _, places = Act.playBracket(bracket, seed)
+		for e, place in pairs(places) do
+			if e.me and place == 1 then
+				wins = wins + 1
+			end
+		end
+	end
+	check(wins > 70 and wins < 400, "strength helps but is not certain (" .. wins .. "/400 wins)")
+	local gems = d.gems
+	local r = Act.awardTournament(d, 1)
+	check(r.cash > 0 and d.gems > gems and d.stats.tournamentWins == 1, "winner rewards")
+end)
+
+suite("activities: students progress, graduate and achievements unlock", function()
+	local Act = H.load("ServerScriptService/Server/Domain/Activities")
+	local d = Schema.validate(Schema.defaults())
+	local rng = RNG.new(5)
+	local s = Act.newStudent(d, rng, "karate", 777)
+	check(d.students[s.id] ~= nil, "student added to the roster")
+	check(not Act.studentAttended(d, s, 100, 80), "rank capped by academy mastery (white belt dojo)")
+	d.mastery.karate = { rank = 9, xp = 0 }
+	local promoted = Act.studentAttended(d, s, 1000, 80)
+	eq(promoted, 2, "graduates to yellow belt")
+	for _ = 1, 50 do
+		Act.newStudent(d, rng, "karate", 1)
+	end
+	local H2 = H.load("ReplicatedStorage/Shared/Config/Activities")
+	check(Util.count(d.students) <= H2.ROSTER_MAX, "roster stays bounded")
+	-- achievements
+	d.stats.studentsServed = 150
+	local new = Act.checkAchievements(d)
+	check(#new >= 2, "first_student and students_100 unlocked")
+	eq(#Act.checkAchievements(d), 0, "achievements unlock once")
+	-- simulation creates and progresses students
+	local d2 = Schema.validate(Schema.defaults())
+	d2.mastery.karate = { rank = 5, xp = 0 }
+	local sim = Simulation.new("smalltown", NOW)
+	local r2 = RNG.new(9)
+	local grads = 0
+	for step = 1, 7200 do
+		local ctx = { now = NOW + step }
+		Simulation.step(d2, sim, ctx, r2, 1)
+		for _, res in ipairs(Simulation.settle(d2, sim, ctx, r2)) do
+			if res.graduation then
+				grads = grads + 1
+			end
+		end
+		if step % 30 == 0 then
+			Academy.collect(d2)
+		end
+	end
+	check(Util.count(d2.students) > 0, "members get student profiles (" .. Util.count(d2.students) .. ")")
+	check(grads > 0, "students graduate over time (" .. grads .. ")")
+	check(d2.discStats.karate and d2.discStats.karate.served > 0, "per-discipline statistics")
+end)
+
 suite("poses: sampling and blending", function()
 	local m = Poses.moves.karate_punch
 	local p0 = Poses.sample(m, 0)

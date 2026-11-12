@@ -13,7 +13,7 @@ local Cosmetics = require(Shared.Config.Cosmetics)
 
 local Schema = {}
 
-Schema.VERSION = 3
+Schema.VERSION = 4
 
 local function newBranch()
 	return {
@@ -60,8 +60,16 @@ function Schema.defaults()
 		stats = {
 			studentsServed = 0, classesCompleted = 0, totalEarned = 0, roomsBuilt = 0, roomsUpgraded = 0,
 			trainersHired = 0, championships = 0, happyStudents = 0, visitsMade = 0, playSeconds = 0,
-			bestHourly = 0, maxReputation = 0,
+			bestHourly = 0, maxReputation = 0, miniGames = 0, tournamentWins = 0, tournamentsPlayed = 0, graduations = 0,
 		},
+		-- v4: active gameplay
+		discStats = {}, -- discipline -> { served, revenue }
+		students = {}, -- id -> student profile (bounded roster)
+		nextStudentId = 1,
+		achievements = {}, -- id -> true
+		tokens = { scout = 0 },
+		minigame = { day = -1, plays = 0, lastAt = 0, best = {} },
+		tournament = { key = -1 },
 		flags = {},
 		settings = { music = true, sfx = true, npcDensity = 1, lowGraphics = false },
 		lastOnline = 0,
@@ -104,6 +112,13 @@ migrations[2] = function(d)
 	end
 end
 
+-- v3 -> v4: active gameplay fields. Defaults are filled in by validate(); old
+-- data stays untouched.
+migrations[3] = function(d)
+	d.students = d.students or {}
+	d.achievements = d.achievements or {}
+end
+
 function Schema.migrate(d)
 	d.version = tonumber(d.version) or 1
 	while d.version < Schema.VERSION do
@@ -125,7 +140,7 @@ end
 
 local BIG = 1e15
 
-local COLLECTIONS = { cities = true, trainers = true, disciplines = true, mastery = true, boosts = true }
+local COLLECTIONS = { cities = true, trainers = true, disciplines = true, mastery = true, boosts = true, students = true, achievements = true, discStats = true }
 
 -- Repair anything invalid (corrupt saves, removed content, NaN). Never throws.
 function Schema.validate(d)
@@ -250,6 +265,23 @@ function Schema.validate(d)
 			end
 		end
 	end
+	-- students (v4)
+	for sid, st in pairs(d.students) do
+		if type(st) ~= "table" or not Disciplines.byId[st.discipline] then
+			d.students[sid] = nil
+		else
+			st.id = sid
+			st.rank = math.floor(num(st.rank, 1, #Disciplines.byId[st.discipline].ranks, 1))
+			st.xp = num(st.xp, 0, BIG, 0)
+			st.talent = math.floor(num(st.talent, 1, 5, 3))
+			st.visits = math.floor(num(st.visits, 0, 1e9, 0))
+			st.satisfaction = num(st.satisfaction, 0, 100, 70)
+			st.seed = math.floor(num(st.seed, 1, 2147483646, 1))
+			st.name = type(st.name) == "string" and string.sub(st.name, 1, 30) or "Student"
+		end
+	end
+	d.nextStudentId = math.floor(num(d.nextStudentId, 1, 1e9, 1))
+	d.tokens.scout = math.floor(num(d.tokens.scout, 0, 1000, 0))
 	-- cosmetics
 	for id in pairs(d.cosmetics.owned) do
 		if not Cosmetics.byId[id] then

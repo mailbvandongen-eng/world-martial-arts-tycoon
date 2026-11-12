@@ -122,6 +122,33 @@ function WorldBuilder.build()
 
 	Props.build("fountain", env, CFrame.new(0, 0, -16), {})
 
+	-- tournament arena on the boulevard: ring, stands and a big sign
+	local arenaCF = CFrame.new(-150, 0, 0)
+	Props.build("ring", env, arenaCF, {})
+	Props.build("bleachers", env, arenaCF * CFrame.new(0, 0, -9) * CFrame.Angles(0, rad(180), 0), { crowd = { { 200, 60, 60 }, { 60, 120, 200 }, { 230, 190, 60 } } })
+	Props.build("bleachers", env, arenaCF * CFrame.new(0, 0, 9), { crowd = { { 60, 160, 90 }, { 200, 200, 200 }, { 140, 60, 170 } } })
+	Props.build("spotlight", env, arenaCF * CFrame.new(-9, 0, 0) * CFrame.Angles(0, rad(-90), 0), { accent = { 255, 230, 180 } })
+	Props.build("spotlight", env, arenaCF * CFrame.new(9, 0, 0) * CFrame.Angles(0, rad(90), 0), { accent = { 255, 230, 180 } })
+	local arenaSign = part(env, Vector3.new(16, 3, 0.6), arenaCF * CFrame.new(0, 12, 0), { 20, 20, 24 }, Enum.Material.SmoothPlastic, "TournamentSign")
+	for _, face in ipairs({ Enum.NormalId.Front, Enum.NormalId.Back }) do
+		local sg = Instance.new("SurfaceGui")
+		sg.Face = face
+		sg.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+		sg.PixelsPerStud = 30
+		sg.LightInfluence = 0
+		sg.Parent = arenaSign
+		local l = Instance.new("TextLabel")
+		l.BackgroundTransparency = 1
+		l.Size = UDim2.fromScale(1, 1)
+		l.Text = "🏆 TOURNAMENT ARENA"
+		l.TextScaled = true
+		l.Font = Enum.Font.GothamBlack
+		l.TextColor3 = Color3.fromRGB(212, 175, 55)
+		l.Parent = sg
+	end
+	part(env, Vector3.new(0.6, 12, 0.6), arenaCF * CFrame.new(-7.6, 6, 0), { 40, 40, 45 }, Enum.Material.Metal, "SignPole")
+	part(env, Vector3.new(0.6, 12, 0.6), arenaCF * CFrame.new(7.6, 6, 0), { 40, 40, 45 }, Enum.Material.Metal, "SignPole")
+
 	-- leaderboards along the boulevard
 	local boards = Instance.new("Folder")
 	boards.Name = "Leaderboards"

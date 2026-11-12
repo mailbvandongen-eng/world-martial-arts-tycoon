@@ -128,9 +128,18 @@ end
 
 function UI.close()
 	if current then
-		current.window:Destroy()
+		local window = current.window
 		current = nil
 		GuiService.SelectedObject = nil
+		-- short close animation, then remove (never leaves an invisible blocker)
+		local s = window:FindFirstChild("OpenScale")
+		if s then
+			TweenService:Create(s, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Scale = 0.94 }):Play()
+		end
+		window.Active = false
+		task.delay(0.12, function()
+			window:Destroy()
+		end)
 	end
 end
 
@@ -139,6 +148,11 @@ function UI.isOpen(name)
 end
 
 function UI.open(name, args)
+	-- pressing the same button again closes the panel
+	if current and current.name == name and not args then
+		UI.close()
+		return
+	end
 	local panel = panels[name]
 	if not panel then
 		warn("[UI] unknown panel " .. tostring(name))
@@ -152,14 +166,20 @@ function UI.open(name, args)
 	local vp = UI.viewport()
 	local w = math.min(panel.width or 780, vp.X - 40)
 	local h = math.min(panel.height or 560, vp.Y - 150)
-	local window = Kit.frame(modalLayer, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 20), Size = UDim2.fromOffset(w, h), BackgroundColor3 = C.bg })
+	local window = Kit.frame(modalLayer, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 10), Size = UDim2.fromOffset(w, h), BackgroundColor3 = C.bg, Active = true, Name = "Window_" .. name })
 	Kit.corner(window, 14)
 	Kit.stroke(window, C.gold, 2)
-	local header = Kit.frame(window, { BackgroundColor3 = C.panel, Size = UDim2.new(1, 0, 0, 46) })
+	local openScale = Instance.new("UIScale")
+	openScale.Name = "OpenScale"
+	openScale.Scale = 0.94
+	openScale.Parent = window
+	TweenService:Create(openScale, TweenInfo.new(0.16, Enum.EasingStyle.Back), { Scale = 1 }):Play()
+	-- fixed header: title + close button never scroll out of view
+	local header = Kit.frame(window, { BackgroundColor3 = C.panel, Size = UDim2.new(1, 0, 0, 54), ZIndex = 5, Name = "Header" })
 	Kit.corner(header, 14)
-	Kit.label(header, panel.title or name, { Position = UDim2.fromOffset(16, 0), Size = UDim2.new(1, -80, 1, 0), Font = Kit.fontBlack, TextSize = 22, TextColor3 = C.gold })
-	local closeBtn = Kit.button(header, "✕", UI.close, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Size = UDim2.fromOffset(36, 36), TextSize = 18 }, "dark")
-	local body = Kit.frame(window, { BackgroundTransparency = 1, Position = UDim2.fromOffset(12, 54), Size = UDim2.new(1, -24, 1, -64) })
+	Kit.label(header, panel.title or name, { Position = UDim2.fromOffset(16, 0), Size = UDim2.new(1, -80, 1, 0), Font = Kit.fontBlack, TextSize = 22, TextColor3 = C.gold, ZIndex = 5 })
+	local closeBtn = Kit.button(header, "✕", UI.close, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -6, 0.5, 0), Size = UDim2.fromOffset(44, 44), TextSize = 22, ZIndex = 6, Name = "Close" }, "bad")
+	local body = Kit.frame(window, { BackgroundTransparency = 1, Position = UDim2.fromOffset(12, 62), Size = UDim2.new(1, -24, 1, -72), Name = "Body", ClipsDescendants = true })
 	current = { name = name, window = window, args = args }
 	local ok, refresh = pcall(panel.build, body, args or {}, UI)
 	if not ok then
@@ -205,6 +225,10 @@ function UI.init()
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = false
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	pcall(function()
+		-- keep the HUD out of notches and rounded corners
+		gui.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
+	end)
 	gui.Parent = player:WaitForChild("PlayerGui")
 	-- root is centred and sized 1/scale; its UIScale shrinks it back to exactly the screen
 	local root = Kit.frame(gui, { BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(1, 1) })
@@ -250,12 +274,26 @@ function UI.init()
 		end
 		return Enum.ContextActionResult.Pass
 	end, false, Enum.KeyCode.ButtonY)
+	-- keyboard shortcuts (PC)
+	local shortcuts = {
+		[Enum.KeyCode.B] = "build", [Enum.KeyCode.G] = "academy", [Enum.KeyCode.T] = "trainers", [Enum.KeyCode.M] = "map",
+		[Enum.KeyCode.Q] = "quests", [Enum.KeyCode.R] = "training", [Enum.KeyCode.U] = "tournaments", [Enum.KeyCode.N] = "students",
+		[Enum.KeyCode.P] = "store", [Enum.KeyCode.Tab] = "more",
+	}
 	UserInputService.InputBegan:Connect(function(input, processed)
 		if processed then
 			return
 		end
 		if input.KeyCode == Enum.KeyCode.Escape and current then
 			UI.close()
+		elseif input.KeyCode == Enum.KeyCode.C then
+			State.call("collect", nil, true)
+		elseif shortcuts[input.KeyCode] then
+			if UI.openBuildShortcut and shortcuts[input.KeyCode] == "build" then
+				UI.openBuildShortcut()
+			else
+				UI.open(shortcuts[input.KeyCode])
+			end
 		end
 	end)
 end

@@ -157,6 +157,12 @@ local function createVisitorRig(entry)
 	})
 	local rig = Rig.build(spec, { name = "Visitor" })
 	local cat = Customers.byId[plan.category]
+	if plan.studentName and not (cat and cat.vip) then
+		-- regular student: small name tag, readable when close
+		local bb = makeBillboard(rig.model, rig.parts.Head, plan.studentName, Color3.fromRGB(235, 235, 235))
+		bb.MaxDistance = 38
+		bb.Size = UDim2.fromScale(3.4, 0.45)
+	end
 	if cat and cat.celebrity then
 		makeBillboard(rig.model, rig.parts.Head, "★ " .. (plan.name or "Celebrity"), Color3.fromRGB(255, 200, 80), "Celebrity")
 	elseif cat and cat.vip then
@@ -209,7 +215,9 @@ local function visitorPose(entry, now)
 	elseif phase == "train" then
 		local key = entry.plot .. ":" .. tostring(plan.slot)
 		local since = now - plan.tSession
-		if rankups[key] and now < rankups[key] then
+		if entry.graduateUntil and now < entry.graduateUntil then
+			move, t = Poses.moves.rankup, now - (entry.graduateUntil - 2.2)
+		elseif rankups[key] and now < rankups[key] then
 			move, t = Poses.moves.rankup, now - (rankups[key] - 2.2)
 		else
 			local period = math.floor(since / DRILL_PERIOD)
@@ -513,6 +521,102 @@ local function step()
 	for plotIndex, c in pairs(champs) do
 		updateChamp(plotIndex, c, now)
 	end
+	if frame % 2 == 0 then
+		updateTourney(now)
+	end
+end
+
+---------------------------------------------------------------- tournament arena
+
+local ARENA = Vector3.new(-150, 0, 0)
+local tourney = { key = nil, fighters = nil, matchKey = nil }
+
+local function clearTourney()
+	if tourney.fighters then
+		for _, f in ipairs(tourney.fighters) do
+			f.rig.model:Destroy()
+		end
+	end
+	tourney.fighters = nil
+	tourney.matchKey = nil
+end
+
+local function updateTourney(now)
+	local t = State.tournament
+	if not t or not t.rounds then
+		clearTourney()
+		return
+	end
+	if (ARENA - cameraPos()).Magnitude > RENDER_DISTANCE + 60 then
+		clearTourney()
+		return
+	end
+	local info = t.info
+	local round
+	for r = 1, 3 do
+		if now >= info.rounds[r] - 30 and now < info.rounds[r] + 4 then
+			round = r
+		end
+	end
+	if not round then
+		clearTourney()
+		return
+	end
+	-- featured match: one with a player, otherwise the first
+	local matches = t.rounds[round]
+	local m = matches[1]
+	for _, mm in ipairs(matches) do
+		if mm.aUser or mm.bUser then
+			m = mm
+		end
+	end
+	local mkey = info.key .. ":" .. round .. ":" .. m.a
+	if tourney.matchKey ~= mkey then
+		clearTourney()
+		tourney.matchKey = mkey
+		tourney.fighters = {}
+		local disc = info.discipline or "karate"
+		for i, name in ipairs({ m.a, m.b }) do
+			local spec = Appearance.describe({ seed = #name * 131 + i, discipline = disc, role = "student", rank = 6, category = "professional" })
+			local rig = Rig.build(spec, { name = "TournamentFighter" })
+			local bb = makeBillboard(rig.model, rig.parts.Head, name, Color3.fromRGB(255, 215, 90))
+			bb.MaxDistance = 120
+			rig.model.Parent = folder
+			table.insert(tourney.fighters, { rig = rig, name = name, side = i == 1 and -1 or 1 })
+		end
+		tourney.disc = Disciplines.byId[disc]
+		tourney.winner = m.winner
+	end
+	local disc = tourney.disc
+	local fightEnd = info.rounds[round]
+	for i, f in ipairs(tourney.fighters) do
+		local pos = ARENA + Vector3.new(f.side * 2.3, 1.5, 0)
+		local cf = CFrame.lookAt(pos, pos + Vector3.new(-f.side, 0, 0))
+		local move, tt
+		if now >= fightEnd then
+			move = (f.name == tourney.winner) and Poses.moves.emote_champion or Poses.moves.emote_bow
+			tt = now - fightEnd
+		else
+			local list = disc.moves.pair or disc.moves.drill
+			local period = math.floor(now / 2.5)
+			move = Poses.moves[list[(period + i) % #list + 1]] or Poses.moves.idle
+			tt = now % 2.5
+		end
+		Rig.apply(f.rig, cf, Poses.sample(move, tt))
+	end
+end
+
+-- Students training in a room right now (for the Academy panel).
+function NPCController.occupancy(plotIndex, slot)
+	local now = workspace:GetServerTimeNow()
+	local n = 0
+	for _, entry in pairs(visitors) do
+		local plan = entry.plan
+		if entry.plot == plotIndex and plan.slot == slot and plan.outcome == "train" and now >= plan.tSession - 8 and now <= plan.tEnd then
+			n = n + 1
+		end
+	end
+	return n
 end
 
 function NPCController.init(audioController)
@@ -528,6 +632,19 @@ function NPCController.init(audioController)
 			clearPlot(plotIndex)
 		elseif kind == "champ" then
 			startChamp(plotIndex, payload)
+		elseif kind == "graduate" then
+			-- a regular student earned a new belt: jump for joy in the room
+			local entry = visitors[plotIndex .. ":" .. tostring(payload.planId)]
+			if entry then
+				entry.graduateUntil = workspace:GetServerTimeNow() + 2.2
+				if entry.rig then
+					local bb = makeBillboard(entry.rig.model, entry.rig.parts.Head, "🎓 PROMOTED!", Color3.fromRGB(255, 215, 90))
+					bb.StudsOffset = Vector3.new(0, 3.2, 0)
+					task.delay(4, function()
+						bb:Destroy()
+					end)
+				end
+			end
 		elseif kind == "rankup" then
 			local key = plotIndex .. ":" .. tostring(payload.slot)
 			rankups[key] = workspace:GetServerTimeNow() + 2.2

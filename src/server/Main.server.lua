@@ -14,6 +14,7 @@ local MonetizationService = require(Services.MonetizationService)
 local LeaderboardService = require(Services.LeaderboardService)
 local CosmeticService = require(Services.CosmeticService)
 local ActionService = require(Services.ActionService)
+local TournamentService = require(Services.TournamentService)
 
 Players.CharacterAutoLoads = true
 
@@ -24,5 +25,6 @@ CosmeticService.init()
 LeaderboardService.init()
 ActionService.init()
 PlayerService.init() -- last: starts loading players and the game loop
+TournamentService.init()
 
 print("[WMAT] World Martial Arts Tycoon server started")

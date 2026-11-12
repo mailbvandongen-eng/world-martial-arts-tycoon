@@ -117,7 +117,11 @@ function TrainerGen.scout(d, rng, disciplineId)
 		return false, "Roster full (" .. Trainers.ROSTER_LIMIT .. "). Release a trainer first"
 	end
 	local cost = Formulas.scoutCost(d.level)
-	if not Economy.spend(d, cost) then
+	if d.tokens and d.tokens.scout > 0 then
+		-- recruitment token from missions: a free scouting
+		d.tokens.scout = d.tokens.scout - 1
+		cost = 0
+	elseif not Economy.spend(d, cost) then
 		return false, "Not enough cash"
 	end
 	local rarity = TrainerGen.rollRarity(rng)

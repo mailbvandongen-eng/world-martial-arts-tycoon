@@ -9,6 +9,7 @@ local C = Kit.colors
 local STATS = {
 	{ id = "richest", name = "Richest" }, { id = "level", name = "Level" }, { id = "students", name = "Students" },
 	{ id = "reputation", name = "Reputation" }, { id = "mastered", name = "Mastered" }, { id = "cities", name = "Cities" },
+	{ id = "tournaments", name = "Tournaments" },
 	{ id = "prestige", name = "Prestige" },
 }
 

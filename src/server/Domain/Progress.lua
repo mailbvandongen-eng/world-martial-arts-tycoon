@@ -30,11 +30,14 @@ local function questTarget(def, level)
 	return target
 end
 
-local function rollQuests(pool, count, seed, level)
+local function rollQuests(pool, count, seed, level, d)
 	local rng = RNG.new(seed)
 	local ids = {}
 	for _, q in ipairs(pool) do
-		table.insert(ids, q.id)
+		-- skip missions for disciplines the player has not unlocked
+		if not q.requires or (d and d.disciplines[q.requires]) then
+			table.insert(ids, q.id)
+		end
 	end
 	local chosen = {}
 	for _ = 1, math.min(count, #ids) do
@@ -53,12 +56,12 @@ function Progress.refreshQuests(d, now, userId)
 	local changed = false
 	if d.quests.day ~= day then
 		d.quests.day = day
-		d.quests.daily = rollQuests(Quests.daily, Quests.DAILY_COUNT, day * 131 + (userId % 100000), d.level)
+		d.quests.daily = rollQuests(Quests.daily, Quests.DAILY_COUNT, day * 131 + (userId % 100000), d.level, d)
 		changed = true
 	end
 	if d.quests.week ~= week then
 		d.quests.week = week
-		d.quests.weekly = rollQuests(Quests.weekly, Quests.WEEKLY_COUNT, week * 977 + (userId % 100000), d.level)
+		d.quests.weekly = rollQuests(Quests.weekly, Quests.WEEKLY_COUNT, week * 977 + (userId % 100000), d.level, d)
 		changed = true
 	end
 	return changed
@@ -98,8 +101,11 @@ function Progress.claimQuest(d, period, index)
 	local cash = math.floor(def.reward.cash * Formulas.rewardCashUnit(d.level))
 	Economy.earn(d, cash)
 	d.gems = d.gems + (def.reward.gems or 0)
+	if def.reward.scoutTokens then
+		d.tokens.scout = d.tokens.scout + def.reward.scoutTokens
+	end
 	local levels = Economy.addXp(d, Progression.xp.missionCompleted)
-	return true, { cash = cash, gems = def.reward.gems or 0, levels = levels }
+	return true, { cash = cash, gems = def.reward.gems or 0, scoutTokens = def.reward.scoutTokens, levels = levels }
 end
 
 ---------------------------------------------------------------- daily login

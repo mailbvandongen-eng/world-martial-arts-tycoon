@@ -24,6 +24,7 @@ local Economy = require(Domain.Economy)
 local Simulation = require(Domain.Simulation)
 local Progress = require(Domain.Progress)
 local TrainerGen = require(Domain.TrainerGen)
+local Activities = require(Domain.Activities)
 
 local DataService = require(script.Parent.DataService)
 local PlotService = require(script.Parent.PlotService)
@@ -232,6 +233,7 @@ local function compactPlan(plan)
 		roomId = plan.roomId, roomLevel = plan.roomLevel, amenityId = plan.amenityId, amenityLevel = plan.amenityLevel, amenitySpot = plan.amenitySpot,
 		tSession = plan.tSession, tEnd = plan.tEnd, amenitySlot = plan.amenitySlot, rank = plan.rank,
 		name = plan.name, satisfaction = plan.satisfaction, classTier = plan.classTier, tExit = plan.tExit,
+		studentName = plan.studentName,
 	}
 end
 
@@ -437,8 +439,22 @@ local function handleSettlement(player, d, rt, res, ctx)
 		PlayerService.track(player, "cashEarned", res.cash)
 	end
 	PlayerService.track(player, "studentsServed", 1)
+	PlayerService.track(player, "students_" .. tostring(plan.interest), 1)
 	if res.newClass then
 		PlayerService.track(player, "classesCompleted", 1)
+		PlayerService.track(player, "classes_" .. tostring(plan.interest), 1)
+	end
+	if res.graduation then
+		-- a student earned a new belt / rank: ceremony in the room, small rewards
+		local g = res.graduation
+		Economy.addReputation(d, 5)
+		PlayerService.giveXp(player, 15)
+		PlayerService.track(player, "graduations", 1)
+		PlayerService.notify(player, "graduation", g)
+		local index = PlotService.plotOf(player)
+		if index then
+			visitorsRemote:FireAllClients("graduate", index, { planId = g.planId, slot = g.slot })
+		end
 	end
 	if res.happy then
 		PlayerService.track(player, "happyStudents", 1)
@@ -580,6 +596,11 @@ local function tickPlayer(player, rt, dt)
 			ls.Cash.Value = Format.cash(d.cash)
 			ls.Rep.Value = Format.short(d.reputation)
 			ls.Level.Value = d.level
+		end
+		-- achievements (cheap checks, once a second)
+		for _, a in ipairs(Activities.checkAchievements(d)) do
+			PlayerService.notify(player, "achievement", { name = a.name, text = a.text, gems = a.gems })
+			rt.dirty = true
 		end
 		-- daily missions roll over at midnight UTC
 		if Progress.refreshQuests(d, os.time(), player.UserId) then

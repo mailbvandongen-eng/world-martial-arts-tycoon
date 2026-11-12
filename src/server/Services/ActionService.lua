@@ -30,6 +30,9 @@ local PlotService = require(script.Parent.PlotService)
 local LeaderboardService = require(script.Parent.LeaderboardService)
 local MonetizationService = require(script.Parent.MonetizationService)
 local CosmeticService = require(script.Parent.CosmeticService)
+local TournamentService = require(script.Parent.TournamentService)
+local Activities = require(Domain.Activities)
+local ActivityConfig = require(Shared.Config.Activities)
 
 local ActionService = {}
 
@@ -617,6 +620,67 @@ handlers.players = function(player)
 		end
 	end
 	return ok(list)
+end
+
+---------------------------------------------------------------- active gameplay
+
+handlers.startChallenge = function(player, d, p)
+	local gameId = Validate.oneOf(p.game, ActivityConfig.games)
+	if not gameId then
+		return fail("Unknown challenge")
+	end
+	local rt = PlayerService.runtime(player)
+	local now = workspace:GetServerTimeNow()
+	local success, challenge, prompts = Activities.startChallenge(d, gameId, now, rt.rng:int(1, 2147483000))
+	if not success then
+		return fail(challenge)
+	end
+	rt.challenge = challenge
+	return ok({ game = gameId, startAt = challenge.startAt, duration = challenge.duration, prompts = prompts })
+end
+
+handlers.submitChallenge = function(player, d, p)
+	local rt = PlayerService.runtime(player)
+	local challenge = rt.challenge
+	if type(p.responses) ~= "table" then
+		return fail("Invalid answers")
+	end
+	local success, res = Activities.finishChallenge(d, challenge, p.responses, workspace:GetServerTimeNow(), Util.dayNumber(os.time()))
+	if not success then
+		return fail(res)
+	end
+	rt.challenge = nil
+	local game = ActivityConfig.games[challenge.game]
+	if game.discipline and res.mastery > 0 then
+		for _, rank in ipairs(Economy.addMastery(d, game.discipline, res.mastery)) do
+			PlayerService.notify(player, "rankup", { discipline = game.discipline, rank = rank, name = Disciplines.byId[game.discipline].ranks[rank].name })
+			task.spawn(CosmeticService.rankUp, player, game.discipline)
+		end
+	end
+	PlayerService.giveXp(player, res.xp)
+	PlayerService.recordEarning(player, res.cash)
+	PlayerService.track(player, "miniGames", 1)
+	PlayerService.track(player, "miniGame_" .. challenge.game, 1)
+	if res.score >= 80 then
+		PlayerService.track(player, "miniGameGood", 1)
+	end
+	local ctx = PlayerService.ctx()
+	if ctx.event and res.score > 0 then
+		Progress.addEventPoints(d, ctx.event, ctx.now, 3)
+	end
+	return ok(res)
+end
+
+handlers.tournament = function(player, d)
+	return ok({ state = TournamentService.state(), myKey = d.tournament.key })
+end
+
+handlers.enterTournament = function(player)
+	local success, res = TournamentService.enter(player)
+	if not success then
+		return fail(res)
+	end
+	return ok(res)
 end
 
 ---------------------------------------------------------------- studio testing

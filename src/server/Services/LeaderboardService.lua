@@ -23,6 +23,7 @@ LeaderboardService.STATS = {
 	{ id = "reputation", title = "Top Reputation", board = "Top Reputation", value = function(d) return d.stats.maxReputation end, format = Format.short },
 	{ id = "mastered", title = "Disciplines Mastered", value = function(d) return Economy.masteredCount(d) end, format = tostring },
 	{ id = "cities", title = "Most Cities", value = function(d) return Util.count(d.cities) end, format = tostring },
+	{ id = "tournaments", title = "Tournament Wins", value = function(d) return d.stats.tournamentWins or 0 end, format = tostring },
 	{ id = "prestige", title = "Highest Prestige", board = "Highest Prestige", value = function(d) return d.rebirths end, format = function(v) return v .. " rebirths" end },
 }
 local byId = {}

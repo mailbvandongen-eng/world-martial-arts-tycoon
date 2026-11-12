@@ -9,6 +9,7 @@ local Signal = require(Shared.Modules.Signal)
 local State = {}
 
 State.data = nil
+State.localUserId = game:GetService("Players").LocalPlayer.UserId
 State.derived = nil
 State.serverTime = 0
 State.Changed = Signal.new()
@@ -35,6 +36,15 @@ function State.init()
 			State.plots[payload.index] = payload
 		end
 		State.PlotsChanged:Fire()
+	end)
+	-- tournaments (server-wide)
+	State.tournament = nil
+	State.TournamentChanged = Signal.new()
+	Remotes.get("Tournament").OnClientEvent:Connect(function(kind, payload)
+		if kind == "state" then
+			State.tournament = payload
+			State.TournamentChanged:Fire()
+		end
 	end)
 	-- ask for the first snapshot now that we are listening (retry while loading)
 	task.spawn(function()

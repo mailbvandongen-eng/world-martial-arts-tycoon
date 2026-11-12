@@ -16,6 +16,12 @@ Quests.daily = {
 	{ id = "d_collect", text = "Collect the register %d times", track = "registerCollected", target = 8, reward = { cash = 0.8, gems = 8 } },
 	{ id = "d_happy", text = "Get %d very happy students (90+)", track = "happyStudents", target = 10, scale = 0.2, reward = { cash = 1.2, gems = 12 } },
 	{ id = "d_mastery", text = "Earn %d mastery XP", track = "masteryXp", target = 150, scale = 3, reward = { cash = 1, gems = 10 } },
+	{ id = "d_karate", text = "Train %d karate students", track = "students_karate", target = 10, scale = 0.2, reward = { cash = 1, gems = 10 } },
+	{ id = "d_boxing", text = "Complete %d boxing classes", track = "classes_boxing", target = 5, requires = "boxing", reward = { cash = 1, gems = 10 } },
+	{ id = "d_judo", text = "Train %d judo students", track = "students_judo", target = 10, requires = "judo", reward = { cash = 1, gems = 10 } },
+	{ id = "d_challenges", text = "Complete %d training challenges", track = "miniGames", target = 3, reward = { cash = 0.8, gems = 10, scoutTokens = 1 } },
+	{ id = "d_fitness", text = "Complete a fitness challenge", track = "miniGame_fitness", target = 1, reward = { cash = 0.6, gems = 8 } },
+	{ id = "d_tournament", text = "Enter a tournament", track = "tournamentsEntered", target = 1, reward = { cash = 1, gems = 12 } },
 }
 
 Quests.weekly = {
@@ -26,6 +32,9 @@ Quests.weekly = {
 	{ id = "w_visit", text = "Visit %d other academies", track = "academiesVisited", target = 3, reward = { cash = 3, gems = 50 } },
 	{ id = "w_build", text = "Build or upgrade %d rooms", track = "roomsTouched", target = 10, reward = { cash = 5, gems = 60 } },
 	{ id = "w_rate", text = "Rate %d academies", track = "academiesRated", target = 3, reward = { cash = 3, gems = 40 } },
+	{ id = "w_tournament", text = "Win a tournament", track = "tournamentWins", target = 1, reward = { cash = 6, gems = 80, scoutTokens = 2 } },
+	{ id = "w_graduate", text = "Promote %d students to a new rank", track = "graduations", target = 5, reward = { cash = 5, gems = 60, scoutTokens = 1 } },
+	{ id = "w_challenges", text = "Score 80+ in %d training challenges", track = "miniGameGood", target = 10, reward = { cash = 4, gems = 50 } },
 }
 
 -- Rewards: cash values are multiplied by Formulas.rewardCashUnit(level),
