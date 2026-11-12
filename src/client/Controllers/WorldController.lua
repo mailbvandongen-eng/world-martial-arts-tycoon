@@ -67,7 +67,7 @@ local function makeBoard(model)
 		return
 	end
 	local bb = Instance.new("BillboardGui")
-	bb.Size = UDim2.fromOffset(200, 50)
+	bb.Size = UDim2.fromScale(10, 2.5)
 	bb.MaxDistance = 150
 	bb.AlwaysOnTop = true
 	bb.Adornee = anchor

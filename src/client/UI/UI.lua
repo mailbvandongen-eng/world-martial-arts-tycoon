@@ -206,9 +206,10 @@ function UI.init()
 	gui.IgnoreGuiInset = false
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.Parent = player:WaitForChild("PlayerGui")
-	local root = Kit.frame(gui, { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1) })
+	-- root is centred and sized 1/scale; its UIScale shrinks it back to exactly the screen
+	local root = Kit.frame(gui, { BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(1, 1) })
 	scale = Instance.new("UIScale")
-	scale.Parent = gui
+	scale.Parent = root
 	UI.root = root
 	UI.hudLayer = Kit.frame(root, { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Name = "HUD" })
 	modalLayer = Kit.frame(root, { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Name = "Modal", ZIndex = 10 })
@@ -216,7 +217,6 @@ function UI.init()
 	toastLayer = Kit.frame(root, { BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 70), Size = UDim2.new(0, 460, 0.5, 0), Name = "Toasts", ZIndex = 30 })
 	local tl = Kit.list(toastLayer, 6)
 	tl.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	-- with UIScale on the ScreenGui, the root must be sized in unscaled units
 	local function resize()
 		updateScale()
 		local s = scale.Scale

@@ -180,7 +180,7 @@ function PlotBuilder.buildReception(parent, index, cityId, level, passes)
 	prompt.Parent = pad
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "RegisterLabel"
-	bb.Size = UDim2.fromOffset(160, 40)
+	bb.Size = UDim2.fromScale(7, 1.8)
 	bb.StudsOffset = Vector3.new(0, 4, 0)
 	bb.MaxDistance = 80
 	bb.AlwaysOnTop = false
@@ -216,7 +216,7 @@ function PlotBuilder.buildClaim(parent, index)
 	prompt:SetAttribute("Kind", "claim")
 	prompt.Parent = pad
 	local bb = Instance.new("BillboardGui")
-	bb.Size = UDim2.fromOffset(260, 60)
+	bb.Size = UDim2.fromScale(16, 2.6)
 	bb.StudsOffset = Vector3.new(0, 6, 0)
 	bb.MaxDistance = 250
 	bb.Parent = pad

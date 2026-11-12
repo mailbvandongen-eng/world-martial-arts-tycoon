@@ -192,9 +192,9 @@ local function applyTitle(folder, character, player, d)
 	end
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "OwnerTitle"
-	bb.Size = UDim2.fromOffset(220, 56)
+	bb.Size = UDim2.fromScale(5, 1.3)
 	bb.StudsOffset = Vector3.new(0, 2.6, 0)
-	bb.MaxDistance = 120
+	bb.MaxDistance = 80
 	bb.Adornee = head
 	bb.Parent = folder
 	local eq = d.cosmetics.equipped.title and Cosmetics.byId[d.cosmetics.equipped.title]

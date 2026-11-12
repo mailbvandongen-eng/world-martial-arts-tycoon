@@ -84,7 +84,7 @@ end
 local function makeBillboard(model, adornee, text, color, sub)
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "Tag"
-	bb.Size = UDim2.fromOffset(180, sub and 40 or 24)
+	bb.Size = UDim2.fromScale(5, sub and 1.1 or 0.6)
 	bb.StudsOffset = Vector3.new(0, 1.8, 0)
 	bb.MaxDistance = 70
 	bb.Adornee = adornee
