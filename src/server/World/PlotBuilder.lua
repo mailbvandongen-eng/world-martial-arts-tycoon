@@ -166,7 +166,15 @@ function PlotBuilder.buildReception(parent, index, cityId, level, passes)
 	-- register pad
 	local pad = part(model, Vector3.new(5, 0.3, 5), cf * CFrame.new(Layout.register.x, 0.5, Layout.register.z), { 212, 175, 55 }, Enum.Material.Neon, "RegisterPad")
 	pad.Transparency = 0.25
-	local stack = part(model, Vector3.new(2.4, 0.4, 1.4), cf * CFrame.new(Layout.register.x, 1, Layout.register.z), { 80, 170, 80 }, Enum.Material.SmoothPlastic, "CashStack")
+	-- counter with a cash register machine and a sign behind the pad
+	local rx, rz = Layout.register.x, Layout.register.z
+	part(model, Vector3.new(6, 3.4, 1.6), cf * CFrame.new(rx, 1.7, rz + 3.6), { 30, 28, 26 }, Enum.Material.SmoothPlastic, "RegisterCounter")
+	part(model, Vector3.new(6.2, 0.25, 1.8), cf * CFrame.new(rx, 3.5, rz + 3.6), { 212, 175, 55 }, Enum.Material.Metal, "RegisterTop")
+	part(model, Vector3.new(1.8, 1.1, 1.2), cf * CFrame.new(rx, 4.15, rz + 3.6), { 60, 60, 66 }, Enum.Material.Metal, "RegisterMachine")
+	part(model, Vector3.new(1.4, 0.5, 0.1), cf * CFrame.new(rx, 4.5, rz + 2.95), { 80, 220, 120 }, Enum.Material.Neon, "RegisterDisplay")
+	local sign = part(model, Vector3.new(6, 1.6, 0.3), cf * CFrame.new(rx, 6.4, rz + 3.9), { 20, 20, 24 }, Enum.Material.SmoothPlastic, "RegisterSign")
+	textOn(sign, Enum.NormalId.Front, "💰 CASH REGISTER", { 120, 230, 120 }, 30)
+	local stack = part(model, Vector3.new(2.4, 0.4, 1.4), cf * CFrame.new(rx, 1, rz), { 80, 170, 80 }, Enum.Material.SmoothPlastic, "CashStack")
 	stack:SetAttribute("BaseY", stack.Position.Y)
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = "Collect"
