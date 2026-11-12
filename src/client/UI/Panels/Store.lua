@@ -66,6 +66,23 @@ local function buy(item, isPass, ui)
 	end
 end
 
+local function noneConfigured()
+	if RunService:IsStudio() then
+		return false
+	end
+	for _, p in ipairs(Monetization.gamePasses) do
+		if p.id ~= 0 then
+			return false
+		end
+	end
+	for _, p in ipairs(Monetization.products) do
+		if p.id ~= 0 then
+			return false
+		end
+	end
+	return true
+end
+
 local function productCard(parent, item, isPass, d, x, ui, order)
 	local owned = isPass and d.purchases.passes[item.key]
 	local card = Kit.frame(parent, { BackgroundColor3 = C.panel2, LayoutOrder = order })
@@ -151,7 +168,13 @@ return {
 				order = order + 1
 				productCard(scroll, p, false, d, x, ui, order)
 			end
-			if tab == "featured" then
+			if tab ~= "cosmetics" and noneConfigured() then
+				-- nothing configured on Roblox yet: say so instead of showing dead buttons
+				order = order + 1
+				local card = Kit.frame(scroll, { BackgroundColor3 = C.panel2, LayoutOrder = order })
+				Kit.corner(card, 12)
+				Kit.label(card, "COMING SOON\n\nRobux items are not available yet. Cosmetics for gems and cash are in the Cosmetics tab.", { Position = UDim2.fromOffset(12, 12), Size = UDim2.new(1, -24, 1, -24), TextSize = 15, TextYAlignment = Enum.TextYAlignment.Top })
+			elseif tab == "featured" then
 				for _, p in ipairs(Monetization.gamePasses) do
 					if p.featured or (p.seasonal and inSeason(p.seasonal)) then
 						addPass(p)

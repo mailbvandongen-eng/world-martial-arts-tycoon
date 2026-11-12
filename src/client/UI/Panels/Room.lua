@@ -91,6 +91,10 @@ return {
 				local remaining = room.buildEnd - now
 				Kit.label(head, "Under construction: " .. Format.time(remaining), { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -12, 0, 10), Size = UDim2.fromOffset(240, 24), TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Color3.fromRGB(240, 160, 60) })
 				local p = Monetization.productByKey.instant_build
+				if p.id == 0 and not RunService:IsStudio() then
+					-- Robux product not set up yet: only show the waiting time
+					return
+				end
 				local b = Kit.button(head, "⚡ Finish now (Robux)", function()
 					if p.id ~= 0 then
 						MarketplaceService:PromptProductPurchase(Players.LocalPlayer, p.id)
