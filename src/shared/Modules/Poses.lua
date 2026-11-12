@@ -344,7 +344,63 @@ M.fitness_lunge = move(2, { K(0, P.handsHips), K(0.7, P.handsHips, { lhp = 70, l
 M.fitness_lift = move(2.4, { K(0, P.stand, { lsp = 30, rsp = 30, lel = 140, rel = 140 }), K(0.8, P.stand, { lsp = 170, rsp = 170, lel = 0, rel = 0 }), K(1.4, P.stand, { lsp = 170, rsp = 170, lel = 0, rel = 0 }), K(2.4, P.stand, { lsp = 30, rsp = 30, lel = 140, rel = 140 }) })
 M.fitness_run = move(0.6, { K(0, P.relaxed, { lhp = 45, lkn = 30, rhp = -30, rkn = 70, lsp = -40, rsp = 40, lel = 90, rel = 90, rp = 8 }), K(0.3, P.relaxed, { rhp = 45, rkn = 30, lhp = -30, lkn = 70, rsp = -40, lsp = 40, lel = 90, rel = 90, rp = 8 }), K(0.6, P.relaxed, { lhp = 45, lkn = 30, rhp = -30, rkn = 70, lsp = -40, rsp = 40, lel = 90, rel = 90, rp = 8 }) })
 M.fitness_curl = move(1.6, { K(0, P.stand, { lel = 10, rel = 10 }), K(0.6, P.stand, { lel = 140, rel = 10 }), K(0.8, P.stand, { lel = 10, rel = 10 }), K(1.4, P.stand, { rel = 140, lel = 10 }), K(1.6, P.stand, { lel = 10, rel = 10 }) })
-M.relax_sit = move(4, { K(0, P.stand, { lhp = 90, rhp = 90, lkn = 90, rkn = 90, lsp = 30, rsp = 30, lel = 40, rel = 40 }), K(2, P.stand, { lhp = 90, rhp = 90, lkn = 90, rkn = 90, lsp = 30, rsp = 30, lel = 40, rel = 40, np = 10 }), K(4, P.stand, { lhp = 90, rhp = 90, lkn = 90, rkn = 90, lsp = 30, rsp = 30, lel = 40, rel = 40 }) })
+M.relax_sit = move(4, { K(0, P.stand, { seat = true, lhp = 90, rhp = 90, lkn = 90, rkn = 90, lsp = 30, rsp = 30, lel = 40, rel = 40 }), K(2, P.stand, { seat = true, lhp = 90, rhp = 90, lkn = 90, rkn = 90, lsp = 30, rsp = 30, lel = 40, rel = 40, np = 10 }), K(4, P.stand, { seat = true, lhp = 90, rhp = 90, lkn = 90, rkn = 90, lsp = 30, rsp = 30, lel = 40, rel = 40 }) })
+
+-- equipment use (stations)
+local guardHigh = { lsp = 75, lel = 105, rsp = 75, rel = 105, lsy = 25, rsy = 25, np = -4 }
+M.boxing_speedbag = move(0.5, { K(0, P.stand, guardHigh), K(0.12, P.stand, guardHigh, { lsp = 95, lel = 80 }), K(0.25, P.stand, guardHigh), K(0.37, P.stand, guardHigh, { rsp = 95, rel = 80 }), K(0.5, P.stand, guardHigh) }, { sounds = { { t = 0.12, name = "bag_hit", chance = 0.25 } } })
+local seated = { lhp = 90, rhp = 90, lkn = 90, rkn = 90, seat = true }
+M.fitness_cycle = move(0.8, {
+	K(0, seated, { rp = 22, lsp = 75, rsp = 75, lel = 25, rel = 25, lhp = 110, lkn = 120, rhp = 70, rkn = 60 }),
+	K(0.4, seated, { rp = 22, lsp = 75, rsp = 75, lel = 25, rel = 25, lhp = 70, lkn = 60, rhp = 110, rkn = 120 }),
+	K(0.8, seated, { rp = 22, lsp = 75, rsp = 75, lel = 25, rel = 25, lhp = 110, lkn = 120, rhp = 70, rkn = 60 }),
+})
+M.fitness_row = move(2, {
+	K(0, seated, { rp = 30, lsp = 80, rsp = 80, lel = 0, rel = 0, lhp = 120, rhp = 120, lkn = 130, rkn = 130 }),
+	K(0.8, seated, { rp = -15, lsp = 40, rsp = 40, lel = 110, rel = 110, lhp = 80, rhp = 80, lkn = 10, rkn = 10 }),
+	K(2, seated, { rp = 30, lsp = 80, rsp = 80, lel = 0, rel = 0, lhp = 120, rhp = 120, lkn = 130, rkn = 130 }),
+})
+local benchLie = { rp = -88, lhp = 40, rhp = 40, lkn = 85, rkn = 85, lhr = 15, rhr = 15, np = 20 }
+M.fitness_bench = move(2.2, {
+	K(0, benchLie, { lsp = 90, rsp = 90, lsr = 40, rsr = 40, lel = 100, rel = 100 }),
+	K(1.0, benchLie, { lsp = 90, rsp = 90, lsr = 10, rsr = 10, lel = 0, rel = 0 }),
+	K(2.2, benchLie, { lsp = 90, rsp = 90, lsr = 40, rsr = 40, lel = 100, rel = 100 }),
+})
+M.fitness_pullup = move(2, {
+	K(0, P.stand, { lsr = 165, rsr = 165, lel = 5, rel = 5, lkn = 40, rkn = 40, rh = 1.2, grounded = false }),
+	K(0.9, P.stand, { lsr = 135, rsr = 135, lel = 120, rel = 120, lkn = 40, rkn = 40, np = -10, rh = 2.6, grounded = false }),
+	K(2, P.stand, { lsr = 165, rsr = 165, lel = 5, rel = 5, lkn = 40, rkn = 40, rh = 1.2, grounded = false }),
+})
+local barOnBack = { lsr = 75, rsr = 75, lel = 120, rel = 120, lsy = -40, rsy = -40 }
+M.fitness_squat_bar = move(2.4, {
+	K(0, P.stand, barOnBack),
+	K(1.1, P.stand, barOnBack, { lhp = 95, rhp = 95, lkn = 115, rkn = 115, rp = 28, lhr = 15, rhr = 15 }),
+	K(2.4, P.stand, barOnBack),
+})
+M.changing = move(3, {
+	K(0, P.stand, { lsp = 60, rsp = 60, lel = 120, rel = 120, lsy = 40, rsy = 40, np = 10 }),
+	K(1, P.stand, { lsr = 120, rsr = 120, lel = 60, rel = 60, np = -5 }),
+	K(2, P.stand, { rsp = 70, rel = 60, np = 15, wy = 15 }),
+	K(3, P.stand, { lsp = 60, rsp = 60, lel = 120, rel = 120, lsy = 40, rsy = 40, np = 10 }),
+})
+M.showering = move(2.6, {
+	K(0, P.stand, { lsr = 140, rsr = 140, lel = 70, rel = 70, np = -15 }),
+	K(1.3, P.stand, { lsr = 150, rsr = 130, lel = 50, rel = 90, np = -10, wr = 4 }),
+	K(2.6, P.stand, { lsr = 140, rsr = 140, lel = 70, rel = 70, np = -15 }),
+})
+M.sit_drink = move(3, {
+	K(0, seated, { rsp = 40, rel = 110, lsp = 30, lel = 40 }),
+	K(1, seated, { rsp = 70, rel = 140, lsp = 30, lel = 40, np = -18 }),
+	K(1.8, seated, { rsp = 70, rel = 140, lsp = 30, lel = 40, np = -18 }),
+	K(3, seated, { rsp = 40, rel = 110, lsp = 30, lel = 40 }),
+})
+M.relax_lie = move(4, { K(0, P.lying, { lhp = 0, rhp = 0, lkn = 0, rkn = 0, lsr = 20, rsr = 20 }), K(2, P.lying, { lhp = 0, rhp = 0, lkn = 0, rkn = 0, lsr = 22, rsr = 22, wp = -3 }), K(4, P.lying, { lhp = 0, rhp = 0, lkn = 0, rkn = 0, lsr = 20, rsr = 20 }) })
+M.browse = move(4, {
+	K(0, P.stand, { ny = 25, np = 5 }),
+	K(1.2, P.stand, { ny = -10, np = -5, rsp = 80, rel = 30 }),
+	K(2.4, P.stand, { ny = -25, np = 8 }),
+	K(4, P.stand, { ny = 25, np = 5 }),
+})
 
 -- emotes (also used for victory poses on player avatars)
 M.emote_bow = move(2.5, { K(0, P.stand), K(0.6, P.stand, { rp = 35, np = 10 }), K(1.6, P.stand, { rp = 35, np = 10 }), K(2.5, P.stand) }, { loop = false })
@@ -410,6 +466,8 @@ function Poses.blend(a, b, x)
 	end
 	-- grounding: a pose is airborne if either side is airborne
 	out.grounded = not ((a.grounded == false and x < 0.999) or (b.grounded == false and x > 0.001))
+	-- seated poses rest the hips on the seat instead of the feet on the floor
+	out.seat = (a.seat == true) or (b.seat == true) or nil
 	return out
 end
 

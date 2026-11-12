@@ -1,10 +1,13 @@
 -- Builds the 3D model of one room (or a construction site) on a plot.
+-- Rooms have their own size per type and grow with every level (Layout.roomSize).
+-- Equipment is placed on the room's training stations (Stations.lua), so each
+-- bag, mat, machine or dohyo spot is where a student actually trains.
 -- Visual upgrades per level:
---   1 floor, walls, sign, 3 pieces of equipment (+ centrepiece)
---   2 +wall trim, more equipment
+--   1 floor, walls, sign, centrepiece, equipment for the room's capacity
+--   2 +wall trim, bigger room, more equipment
 --   3 +ceiling light strips
 --   4 +floor border, accent banners
---   5 +gold trim, glowing sign, trophy
+--   5 +gold trim, glowing sign, trophy case
 -- Premium equipment passes change finishes (gold ring, diamond octagon, ...).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -12,11 +15,13 @@ local Shared = ReplicatedStorage.Shared
 local Layout = require(Shared.Modules.Layout)
 local Rooms = require(Shared.Config.Rooms)
 local Disciplines = require(Shared.Config.Disciplines)
+local Stations = require(Shared.Modules.Stations)
 local Props = require(script.Parent.Props)
 
 local RoomBuilder = {}
 
-local W, D, H = Layout.ROOM_W, Layout.ROOM_D, Layout.WALL_H
+-- Size of the room being built (set at the start of every build call).
+local W, D, H = Layout.CELL_W, Layout.CELL_D, Layout.WALL_H
 local rad = math.rad
 
 local function col(c)
@@ -127,17 +132,6 @@ local function buildFloor(model, origin, style, finish)
 	return base
 end
 
--- Positions for equipment along walls (room-local x, z, yaw).
-local WALL_SPOTS = {
-	{ -12.4, -8, -90 }, { 12.4, -8, 90 }, { -12.4, -3, -90 }, { 12.4, -3, 90 },
-	{ -12.4, 2, -90 }, { 12.4, 2, 90 }, { -10.5, 10.4, 0 }, { 10.5, 10.4, 0 }, { -12.4, 6.5, -90 }, { 12.4, 6.5, 90 },
-}
-local CENTRE = { 0, 7.6, 0 }
-
-local function equipmentCount(level)
-	return ({ 3, 4, 6, 8, 10 })[level] or 3
-end
-
 local function finishFor(roomDef, passes)
 	local disc = roomDef.discipline
 	if disc == "boxing" and passes.golden_ring then
@@ -188,16 +182,16 @@ local function buildWalls(model, origin, style, level, accent, finish)
 		part(model, Vector3.new(W - 2, 0.8, 0.2), origin * CFrame.new(0, 0.8, D / 2 - 1.1), trimColor, trimMat, "Skirting")
 	end
 	if level >= 3 then
-		for _, x in ipairs({ -7, 7 }) do
-			local beam = part(model, Vector3.new(0.8, 0.5, D - 2), origin * CFrame.new(x, H - 0.4, 0), { 40, 40, 45 }, Enum.Material.Metal, "Beam")
-			local strip = part(model, Vector3.new(0.4, 0.15, D - 3), origin * CFrame.new(x, H - 0.7, 0), { 255, 248, 230 }, Enum.Material.Neon, "LightStrip")
+		-- wall-mounted light bars (no ceiling beams: the camera looks in from above)
+		for _, sx in ipairs({ -1, 1 }) do
+			local bar = part(model, Vector3.new(0.3, 0.4, D - 6), origin * CFrame.new(sx * (W / 2 - 1.2), H - 1.5, 1), { 255, 248, 230 }, Enum.Material.Neon, "WallLight")
 			local light = Instance.new("SurfaceLight")
-			light.Face = Enum.NormalId.Bottom
-			light.Range = 14
-			light.Brightness = 1.2
+			light.Face = sx > 0 and Enum.NormalId.Left or Enum.NormalId.Right
+			light.Range = 16
+			light.Brightness = 1.1
 			light.Angle = 120
-			light.Parent = strip
-			beam.CastShadow = false
+			light.Parent = bar
+			bar.CastShadow = false
 		end
 	end
 	if level >= 4 then
@@ -255,9 +249,10 @@ end
 
 -- opts: { plotIndex, passes = {key=true}, now }
 function RoomBuilder.build(parent, plotCF, slot, room, opts)
-	local s = Layout.slot(slot)
-	local origin = plotCF * CFrame.new(s.cx, 0, s.cz)
 	local def = Rooms.byId[room.id]
+	local rect = Layout.roomRect(slot, def, room.level)
+	W, D = rect.w, rect.d
+	local origin = plotCF * CFrame.new(rect.cx, 0, rect.z0 + D / 2)
 	local style = Rooms.style(room.id)
 	local disc = def.discipline and Disciplines.byId[def.discipline]
 	local accent = disc and disc.accent or def.color
@@ -279,28 +274,43 @@ function RoomBuilder.build(parent, plotCF, slot, room, opts)
 	buildWalls(model, origin, style, room.level, accent, finish)
 	buildSign(model, origin, style.sign or def.name, accent, room.level)
 
-	-- equipment
-	local centre
-	local others = {}
-	for _, key in ipairs(style.equipment) do
-		if Props.CENTREPIECES[key] and not centre then
-			centre = key
-		elseif not Props.CENTREPIECES[key] then
-			table.insert(others, key)
+	-- equipment on the training stations
+	local info = Stations.forRoom(room.id, room.level)
+	local propOpts = { accent = accent, finish = finish, glyph = disc and string.sub(disc.name, 1, 1) or nil }
+	local function at(x, z, face)
+		-- room-local (x, z from the front wall) -> CFrame; face = where the prop's front points
+		return origin * CFrame.new(x, 0, z - D / 2) * CFrame.Angles(0, rad((face or 0) + 180), 0)
+	end
+	local count = #info.stations
+	if def.kind == "training" or def.kind == "coaching" or def.kind == "vip" then
+		count = math.min(count, opts.capacity or count)
+	end
+	for i = 1, count do
+		local st = info.stations[i]
+		if st.prop then
+			Props.build(st.prop, model, at(st.propX, st.propZ, st.propFace), propOpts)
 		end
 	end
-	local propOpts = { accent = accent, finish = finish, glyph = disc and string.sub(disc.name, 1, 1) or nil }
-	if centre then
-		Props.build(centre, model, origin * CFrame.new(CENTRE[1], 0, CENTRE[2]), propOpts)
+	local extras = info.extras
+	if extras.centre then
+		Props.build(extras.centre.prop, model, at(extras.centre.x, extras.centre.z, 180), propOpts)
 	end
-	local n = math.min(#others, equipmentCount(room.level))
-	for i = 1, n do
-		local spot = WALL_SPOTS[i]
-		local cf = origin * CFrame.new(spot[1], 0, spot[2]) * CFrame.Angles(0, rad(spot[3]), 0)
-		Props.build(others[i], model, cf, propOpts)
+	if extras.counters then
+		for _, x in ipairs(extras.counters.xs) do
+			Props.build(extras.counters.prop, model, at(x, extras.counters.z, 180), propOpts)
+		end
+	end
+	for _, item in ipairs(extras.decor or {}) do
+		if item == "kamiza_back" then
+			Props.build("kamiza", model, at(0, D - 1, 180), propOpts)
+		elseif item == "belt_display" and room.level >= 2 then
+			Props.build("belt_display", model, at(-(W / 2 - 5), D - 0.8, 180), propOpts)
+		elseif item == "mirror_wall" then
+			Props.build("mirror", model, at(W / 2 - 5.5, D - 0.7, 180), propOpts)
+		end
 	end
 	if room.level >= 5 then
-		Props.build("trophy_case", model, origin * CFrame.new(0, 0, D / 2 - 1.2), {})
+		Props.build("trophy_case", model, at(W / 2 - 1.6, D - 3, 270), {})
 	end
 	if (opts.passes or {}).gym_lighting then
 		for _, x in ipairs({ -9, 9 }) do
@@ -365,7 +375,8 @@ end
 -- Empty slot: build pad with a prompt.
 function RoomBuilder.buildEmpty(parent, plotCF, slot, plotIndex, locked)
 	local s = Layout.slot(slot)
-	local origin = plotCF * CFrame.new(s.cx, 0, s.cz)
+	W, D = Layout.CELL_W - 4, Layout.CELL_D - 4
+	local origin = plotCF * CFrame.new(s.cx, 0, s.z0 + Layout.CELL_D / 2)
 	local model = Instance.new("Model")
 	model.Name = "Empty" .. slot
 	model:SetAttribute("Slot", slot)

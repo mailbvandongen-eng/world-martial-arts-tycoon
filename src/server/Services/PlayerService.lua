@@ -229,6 +229,7 @@ local function compactPlan(plan)
 	return {
 		id = plan.id, seed = plan.seed, category = plan.category, interest = plan.interest, t0 = plan.t0,
 		queue = plan.queue, tDeskDone = plan.tDeskDone, outcome = plan.outcome, slot = plan.slot, spot = plan.spot,
+		roomId = plan.roomId, roomLevel = plan.roomLevel, amenityId = plan.amenityId, amenityLevel = plan.amenityLevel, amenitySpot = plan.amenitySpot,
 		tSession = plan.tSession, tEnd = plan.tEnd, amenitySlot = plan.amenitySlot, rank = plan.rank,
 		name = plan.name, satisfaction = plan.satisfaction, classTier = plan.classTier, tExit = plan.tExit,
 	}

@@ -487,6 +487,82 @@ defs.dohyo = function(c, o)
 	end
 end
 
+defs.dohyo_round = function(c, o)
+	-- raised clay ring (13 studs) on a square base, straw bales, starting lines
+	c:box(V(16, 0.9, 16), V(0, 0.45, 0), { 175, 135, 85 }, MAT.Sand)
+	c:part(Enum.PartType.Cylinder, V(0.5, 13.4, 13.4), V(0, 1.15, 0), { 195, 160, 110 }, MAT.Sand, { 0, 0, 90 })
+	for i = 0, 23 do
+		local a = rad(i * 15)
+		c:box(V(1.6, 0.4, 0.4), V(math.sin(a) * 6.1, 1.55, math.cos(a) * 6.1), { 205, 185, 115 }, MAT.Fabric, { 0, i * 15 + 90, 0 })
+	end
+	c:box(V(0.8, 0.05, 0.15), V(-1, 1.42, 0), WHITE, MAT.SmoothPlastic, { 0, 90, 0 })
+	c:box(V(0.8, 0.05, 0.15), V(1, 1.42, 0), WHITE, MAT.SmoothPlastic, { 0, 90, 0 })
+	if o.finish == "luxury" then
+		for _, sx in ipairs({ -1, 1 }) do
+			for _, sz in ipairs({ -1, 1 }) do
+				c:box(V(0.3, 1.2, 0.3), V(sx * 5.6, 11.4, sz * 5.6), ({ { 30, 120, 60 }, { 200, 30, 30 }, { 240, 240, 240 }, { 30, 30, 30 } })[(sx + 1) + (sz + 1) / 2 + 1], MAT.Fabric)
+			end
+		end
+		c:box(V(13, 0.8, 13), V(0, 12.6, 0), DARKWOOD, MAT.Wood)
+		c:wedge(V(13, 2.2, 6.5), V(0, 14.1, -3.25), { 60, 70, 90 }, MAT.Slate)
+		c:wedge(V(13, 2.2, 6.5), V(0, 14.1, 3.25), { 60, 70, 90 }, MAT.Slate, { 0, 180, 0 })
+		c:box(V(13.2, 0.2, 13.2), V(0, 12.1, 0), GOLD, MAT.Metal)
+	end
+end
+defs.mat = function(c)
+	c:box(V(2.2, 0.12, 4.2), V(0, 0.08, 0), { 60, 140, 200 }, MAT.Fabric)
+end
+defs.dumbbell_rack = function(c)
+	defs.dumbbells(c)
+end
+defs.kettlebell_set = function(c)
+	defs.kettlebells(c)
+end
+defs.bench_press = function(c)
+	c:box(V(1.3, 0.5, 4.2), V(0, 1.7, 0.4), { 30, 30, 35 }, MAT.Fabric)
+	c:box(V(0.3, 1.5, 0.3), V(0, 0.75, 1.8), METAL, MAT.Metal)
+	c:box(V(0.3, 1.5, 0.3), V(0, 0.75, -1), METAL, MAT.Metal)
+	for _, sx in ipairs({ -1, 1 }) do
+		c:box(V(0.25, 4, 0.25), V(sx * 1.4, 2, -1.6), BLACK, MAT.Metal)
+	end
+	c:cyl(0.18, 5.6, V(0, 4.1, -1.6), METAL, MAT.Metal, { 0, 0, 90 })
+	c:cyl(1.5, 0.35, V(-2.5, 4.1, -1.6), { 40, 40, 45 }, MAT.Metal, { 0, 0, 90 })
+	c:cyl(1.5, 0.35, V(2.5, 4.1, -1.6), { 40, 40, 45 }, MAT.Metal, { 0, 0, 90 })
+end
+defs.pullup_bar = function(c)
+	for _, sx in ipairs({ -1, 1 }) do
+		c:box(V(0.35, 9, 0.35), V(sx * 1.8, 4.5, 0.6), BLACK, MAT.Metal)
+		c:box(V(0.35, 0.35, 1.6), V(sx * 1.8, 0.2, 0.6), BLACK, MAT.Metal)
+	end
+	c:cyl(0.2, 3.9, V(0, 8.6, 0.6), METAL, MAT.Metal, { 0, 0, 90 })
+end
+defs.locker_bank = function(c)
+	defs.lockers(c)
+end
+defs.stall = function(c)
+	c:box(V(3, 7, 0.2), V(0, 3.5, 1.5), { 200, 205, 210 }, MAT.SmoothPlastic)
+	c:box(V(0.2, 7, 3), V(-1.5, 3.5, 0), { 200, 205, 210 }, MAT.SmoothPlastic)
+	c:box(V(0.2, 7, 3), V(1.5, 3.5, 0), { 200, 205, 210 }, MAT.SmoothPlastic)
+	local door = c:box(V(2.6, 6, 0.15), V(0.2, 3.3, -1.5), { 150, 170, 190 }, MAT.SmoothPlastic, { 0, -25, 0 })
+	door.Name = "StallDoor"
+	c:box(V(1.4, 1.4, 1.6), V(0, 0.7, 0.6), WHITE, MAT.SmoothPlastic)
+end
+defs.sink = function(c)
+	c:box(V(3, 3, 1.4), V(0, 1.5, 0), { 230, 230, 230 }, MAT.Marble)
+	c:box(V(1.4, 0.2, 0.9), V(0, 3.05, -0.1), { 180, 200, 210 }, MAT.Glass)
+	local m = c:box(V(2.6, 2.2, 0.1), V(0, 5, 0.65), { 210, 230, 240 }, MAT.Glass)
+	m.Reflectance = 0.5
+end
+defs.belt_display = function(c)
+	-- wall rack showing every belt colour of the grading system
+	c:box(V(7, 4, 0.3), V(0, 6, 0), DARKWOOD, MAT.Wood)
+	local colors = { WHITE, { 240, 205, 40 }, { 235, 125, 30 }, { 40, 140, 60 }, { 35, 85, 185 }, { 110, 70, 40 }, BLACK }
+	for i, col_ in ipairs(colors) do
+		c:box(V(0.6, 3, 0.12), V(-3 + (i - 1), 6, -0.2), col_, MAT.Fabric)
+	end
+	c:box(V(7.2, 0.3, 0.5), V(0, 8.1, -0.1), GOLD, MAT.Metal)
+end
+
 ---------------------------------------------------------------- city architecture
 defs.tree = function(c, o)
 	c:cyl(0.8, 6, V(0, 3, 0), { 110, 80, 50 }, MAT.Wood)

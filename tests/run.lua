@@ -67,7 +67,7 @@ suite("config: 12 disciplines, complete definitions", function()
 end)
 
 suite("config: rooms (24 buildable incl. reception), cities, trainers", function()
-	eq(#Rooms.list, 24, "room types")
+	eq(#Rooms.list, 25, "room types")
 	for _, r in ipairs(Rooms.list) do
 		check(Rooms.style(r.id) ~= nil, r.id .. " has a style")
 		if r.kind == "training" and r.discipline ~= "fitness" then
@@ -188,10 +188,7 @@ suite("layout: slots never overlap and stay inside the plot", function()
 			local overlap = a.x0 < b.x1 and b.x0 < a.x1 and a.z0 < b.z1 and b.z0 < a.z1
 			check(not overlap, "slots " .. i .. " and " .. j .. " do not overlap")
 		end
-		for spot = 1, 24 do
-			local p = Layout.trainingSpot(i, spot)
-			check(p.x > a.x0 + 1 and p.x < a.x1 - 1 and p.z > a.z0 and p.z < a.z1, "spot inside room")
-		end
+		check(a.x0 >= Layout.CORRIDOR / 2 or a.x1 <= -Layout.CORRIDOR / 2, "slot " .. i .. " leaves the central hall free")
 	end
 	-- first slots are next to the corridor
 	check(math.abs(Layout.slot(1).cx) < math.abs(Layout.slot(3).cx), "inner columns fill first")
@@ -205,8 +202,67 @@ suite("layout: slots never overlap and stay inside the plot", function()
 	end
 end)
 
+suite("stations: every room has reachable, non-overlapping training positions", function()
+	local Stations = H.load("ReplicatedStorage/Shared/Modules/Stations")
+	local FOOT = { ring = { 6.2, 4.4 }, octagon = { 5.6, 5.6 }, dohyo_round = { 6.6, 6.6 } }
+	for _, def in ipairs(Rooms.list) do
+		if def.kind ~= "reception" then
+			for level = 1, 5 do
+				local info = Stations.forRoom(def.id, level)
+				local w, d = info.w, info.d
+				local tag = def.id .. " L" .. level
+				check(w <= Layout.CELL_W and d <= Layout.CELL_D, tag .. " fits its cell")
+				local list = info.stations
+				local centre = info.extras.centre
+				for i, st in ipairs(list) do
+					check(math.abs(st.x) <= w / 2 - 1 and st.z >= 4 and st.z <= d - 1, tag .. " station " .. i .. " inside the room and out of the entry lane")
+					check(math.abs(st.lane) <= w / 2 - 1, tag .. " station " .. i .. " approach lane inside")
+					if st.prop then
+						check(math.abs(st.propX) <= w / 2 - 0.5 and st.propZ >= 4 and st.propZ <= d - 0.5, tag .. " prop " .. i .. " inside, door clear")
+					end
+					if st.pair then
+						check(list[st.pair] and list[st.pair].pair == i, tag .. " pair " .. i .. " is mutual")
+					end
+					if centre and FOOT[centre.prop] and not st.ring then
+						local f = FOOT[centre.prop]
+						local inside
+						if centre.prop == "ring" then
+							inside = math.abs(st.x - centre.x) < f[1] and math.abs(st.z - centre.z) < f[2]
+						else
+							inside = math.sqrt((st.x - centre.x) ^ 2 + (st.z - centre.z) ^ 2) < f[1]
+						end
+						check(not inside, tag .. " station " .. i .. " not inside the " .. centre.prop)
+					end
+					for j = i + 1, #list do
+						local o = list[j]
+						local dist = math.sqrt((st.x - o.x) ^ 2 + (st.z - o.z) ^ 2)
+						check(dist >= 2.4, tag .. " stations " .. i .. "/" .. j .. " apart (" .. string.format("%.1f", dist) .. ")")
+						if o.prop and j ~= i then
+							local pd = math.sqrt((st.x - o.propX) ^ 2 + (st.z - o.propZ) ^ 2)
+							check(pd >= 1.4, tag .. " station " .. i .. " not on equipment of " .. j)
+						end
+					end
+					if info.trainer then
+						local td = math.sqrt((st.x - info.trainer.x) ^ 2 + (st.z - info.trainer.z) ^ 2)
+						check(td >= 2.2, tag .. " station " .. i .. " clear of the trainer")
+					end
+				end
+				if def.kind == "training" or def.kind == "coaching" or def.kind == "vip" then
+					local needed = math.min(24, (def.capacity or 4) + (def.capacityPerLevel or 0) * (level - 1) + 3)
+					check(#list >= needed, tag .. " has enough stations (" .. #list .. "/" .. needed .. ")")
+					check(info.trainer ~= nil, tag .. " has a trainer spot")
+				end
+				if def.kind == "amenity" or def.kind == "shop" then
+					check(#list >= 2, tag .. " has visit spots")
+				end
+			end
+		end
+	end
+end)
+
 suite("visits: timeline is continuous and matches plan times", function()
-	local plan = { t0 = 100, queue = 2, tDeskDone = 110, outcome = "train", slot = 5, spot = 7, tSession = 140, tEnd = 158, amenitySlot = 2 }
+	local plan = { t0 = 100, queue = 2, tDeskDone = 110, outcome = "train", slot = 5, roomId = "boxing_room", roomLevel = 3, spot = 7, tSession = 140, tEnd = 158,
+		amenitySlot = 2, amenityId = "juice_bar", amenityLevel = 1, amenitySpot = 2 }
 	local segs, tExit = Visits.timeline(plan)
 	local t = 100
 	for _, s in ipairs(segs) do

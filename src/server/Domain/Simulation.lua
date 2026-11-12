@@ -129,6 +129,8 @@ local function chooseRoom(d, sim, category, interest, now)
 	return nil
 end
 
+local Stations = require(Shared.Modules.Stations)
+
 local function pickAmenity(d, sim, rng, now)
 	local branch = d.cities[sim.cityId]
 	local options = {}
@@ -279,6 +281,8 @@ function Simulation.planVisit(d, sim, ctx, rng)
 
 	plan.outcome = "train"
 	plan.slot = slot
+	plan.roomId = room.id
+	plan.roomLevel = room.level
 	plan.spot = seat
 	plan.tSession = sessionStart
 	plan.tEnd = sessionStart + duration
@@ -290,6 +294,14 @@ function Simulation.planVisit(d, sim, ctx, rng)
 	local amenity = pickAmenity(d, sim, rng, now)
 	if amenity then
 		plan.amenitySlot = amenity.slot
+		plan.amenityId = amenity.room.id
+		plan.amenityLevel = amenity.room.level
+		-- hand out the amenity's visit spots in turn so visitors spread out
+		local count = math.max(1, Stations.count(amenity.room.id, amenity.room.level))
+		sim.amenityNext = sim.amenityNext or {}
+		local nextSpot = (sim.amenityNext[amenity.slot] or 0) % count + 1
+		sim.amenityNext[amenity.slot] = nextSpot
+		plan.amenitySpot = nextSpot
 		if amenity.def.kind == "shop" and rng:chance(amenity.def.shopChance) then
 			plan.shopSpend = amenity.def.shopSpend * (1 + 0.3 * (amenity.room.level - 1))
 		end

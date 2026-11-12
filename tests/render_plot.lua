@@ -25,7 +25,7 @@ for _, extra in ipairs({ "vip_room", "juice_bar", "recovery_room", "arena", "str
 end
 for slot, id in ipairs(ids) do
 	if slot <= 16 then
-		RoomBuilder.build(folder, cf, slot, { id = id, level = 1 + (slot % 5), tier = 1 }, { plotIndex = 5, passes = passes, now = 0 })
+		RoomBuilder.build(folder, cf, slot, { id = id, level = 1 + (slot % 5), tier = 1 }, { plotIndex = 5, passes = passes, now = 0, capacity = 8 })
 	end
 end
 RoomBuilder.build(folder, cf, 17, { id = "mma_room", level = 2, tier = 1, buildEnd = 100, buildStart = 0 }, { plotIndex = 5, passes = {}, now = 0 })

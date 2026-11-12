@@ -68,7 +68,7 @@ Disciplines.list = {
 			idle = "karate_stance",
 			drill = { "karate_punch", "karate_front_kick", "karate_block", "karate_roundhouse", "karate_kata" },
 			teach = { "karate_kata", "karate_punch", "coach_count" },
-			pair = nil,
+			pair = { "karate_punch", "karate_block" }, -- kumite: attack / block
 		},
 		demandTags = { "traditional", "kids" },
 	},

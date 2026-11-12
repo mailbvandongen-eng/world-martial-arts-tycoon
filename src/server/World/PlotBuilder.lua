@@ -45,45 +45,166 @@ local function textOn(p, face, text, color, ppS)
 	return label
 end
 
--- Ground, paths, perimeter. Rebuilt when the city changes.
+-- Architecture per city: the academy building itself changes with every city
+-- (facade material and height, hall floor, entrance gate), not only the colour.
+local ARCH = {
+	smalltown = { wall = "Brick", hall = "WoodPlanks", hallColor = { 150, 112, 72 }, gate = "classic", height = 7 },
+	amsterdam = { wall = "Brick", hall = "Concrete", hallColor = { 196, 196, 200 }, gate = "gabled", height = 9 },
+	rotterdam = { wall = "CorrodedMetal", hall = "DiamondPlate", hallColor = { 125, 125, 130 }, gate = "industrial", height = 10 },
+	london = { wall = "Brick", hall = "Marble", hallColor = { 226, 220, 208 }, gate = "arch", height = 10 },
+	tokyo = { wall = "WoodPlanks", hall = "WoodPlanks", hallColor = { 176, 136, 90 }, gate = "torii", height = 9 },
+	bangkok = { wall = "SmoothPlastic", hall = "WoodPlanks", hallColor = { 150, 96, 54 }, gate = "thai", height = 9 },
+	seoul = { wall = "SmoothPlastic", hall = "WoodPlanks", hallColor = { 190, 160, 120 }, gate = "hanok", height = 10 },
+	newyork = { wall = "Concrete", hall = "Marble", hallColor = { 210, 210, 214 }, gate = "glass", height = 14 },
+	dubai = { wall = "Marble", hall = "Marble", hallColor = { 242, 236, 224 }, gate = "gold", height = 14 },
+	lasvegas = { wall = "SmoothPlastic", hall = "Marble", hallColor = { 35, 30, 40 }, gate = "neon", height = 13 },
+}
+PlotBuilder.ARCH = ARCH
+
+local GATE_HALF = 13 -- the entrance is 26 studs wide
+
+local function buildGate(model, cf, city, arch, title)
+	local th = city.theme
+	local z = Layout.FRONT
+	local accent, roof = th.accent, th.roof
+	local style = arch.gate
+	local gateH = 17
+	local beamColor = { 25, 25, 28 }
+	if style == "torii" then
+		for _, sx in ipairs({ -1, 1 }) do
+			part(model, Vector3.new(2.6, 20, 2.6), cf * CFrame.new(sx * GATE_HALF, 10, z), { 210, 50, 40 }, Enum.Material.SmoothPlastic, "ToriiPost")
+		end
+		part(model, Vector3.new(34, 1.8, 3), cf * CFrame.new(0, 21, z), { 25, 25, 28 }, Enum.Material.SmoothPlastic, "Kasagi")
+		part(model, Vector3.new(30, 1.4, 2), cf * CFrame.new(0, 17.5, z), { 210, 50, 40 }, Enum.Material.SmoothPlastic, "Nuki")
+		gateH = 15
+	elseif style == "thai" then
+		for _, sx in ipairs({ -1, 1 }) do
+			part(model, Vector3.new(3, 16, 3), cf * CFrame.new(sx * GATE_HALF, 8, z), { 245, 235, 205 }, Enum.Material.SmoothPlastic, "Pillar")
+			part(model, Vector3.new(3.4, 1, 3.4), cf * CFrame.new(sx * GATE_HALF, 16.2, z), { 212, 175, 55 }, Enum.Material.Metal, "PillarCap")
+		end
+		local w1 = Instance.new("WedgePart")
+		w1.Anchored, w1.Size, w1.Color, w1.Material = true, Vector3.new(30, 6, 5), Color3.fromRGB(200, 50, 40), Enum.Material.Slate
+		w1.CFrame = cf * CFrame.new(0, 22, z - 2.5)
+		w1.Parent = model
+		local w2 = w1:Clone()
+		w2.CFrame = cf * CFrame.new(0, 22, z + 2.5) * CFrame.Angles(0, math.pi, 0)
+		w2.Parent = model
+		part(model, Vector3.new(0.8, 6, 0.8), cf * CFrame.new(0, 28, z), { 212, 175, 55 }, Enum.Material.Metal, "Spire")
+	elseif style == "hanok" then
+		for _, sx in ipairs({ -1, 1 }) do
+			part(model, Vector3.new(2.4, 16, 2.4), cf * CFrame.new(sx * GATE_HALF, 8, z), { 120, 70, 40 }, Enum.Material.Wood, "Post")
+		end
+		part(model, Vector3.new(36, 1.2, 8), cf * CFrame.new(0, 20.5, z) * CFrame.Angles(0, 0, rad(0)), { 50, 55, 65 }, Enum.Material.Slate, "Roof")
+		part(model, Vector3.new(38, 0.6, 9), cf * CFrame.new(0, 19.8, z), { 30, 90, 200 }, Enum.Material.SmoothPlastic, "Dancheong")
+	elseif style == "glass" then
+		local frame = part(model, Vector3.new(30, 22, 1), cf * CFrame.new(0, 11, z - 0.6), { 160, 200, 225 }, Enum.Material.Glass, "GlassFront")
+		frame.Transparency = 0.5
+		frame.CanCollide = false
+		for _, sx in ipairs({ -1, 1 }) do
+			part(model, Vector3.new(1.5, 24, 1.5), cf * CFrame.new(sx * 15.5, 12, z), { 60, 60, 66 }, Enum.Material.Metal, "Mullion")
+		end
+		part(model, Vector3.new(34, 1.2, 4), cf * CFrame.new(0, 24, z), { 60, 60, 66 }, Enum.Material.Metal, "Canopy")
+		gateH = 19
+	elseif style == "gold" then
+		for _, sx in ipairs({ -1, 1 }) do
+			part(model, Vector3.new(2.8, 22, 2.8), cf * CFrame.new(sx * GATE_HALF, 11, z), { 212, 175, 55 }, Enum.Material.Metal, "GoldColumn")
+		end
+		local arch_ = Instance.new("Part")
+		arch_.Shape = Enum.PartType.Cylinder
+		arch_.Anchored = true
+		arch_.Size = Vector3.new(3, 28, 28)
+		arch_.CFrame = cf * CFrame.new(0, 21, z) * CFrame.Angles(0, rad(90), 0)
+		arch_.Color = Color3.fromRGB(240, 235, 225)
+		arch_.Material = Enum.Material.Marble
+		arch_.Parent = model
+		beamColor = { 30, 26, 20 }
+		gateH = 18
+	elseif style == "neon" then
+		for _, sx in ipairs({ -1, 1 }) do
+			part(model, Vector3.new(2, 20, 2), cf * CFrame.new(sx * GATE_HALF, 10, z), { 30, 30, 35 }, Enum.Material.Metal, "Post")
+			part(model, Vector3.new(0.6, 20, 0.6), cf * CFrame.new(sx * GATE_HALF, 10, z - 1.2), accent, Enum.Material.Neon, "NeonTube")
+		end
+		part(model, Vector3.new(30, 0.6, 0.6), cf * CFrame.new(0, 20.5, z - 1.2), { 255, 220, 60 }, Enum.Material.Neon, "NeonBar")
+	elseif style == "industrial" then
+		for _, sx in ipairs({ -1, 1 }) do
+			part(model, Vector3.new(2, 18, 2), cf * CFrame.new(sx * GATE_HALF, 9, z), { 200, 120, 30 }, Enum.Material.DiamondPlate, "Girder")
+		end
+		part(model, Vector3.new(30, 2, 2), cf * CFrame.new(0, 19, z), { 200, 120, 30 }, Enum.Material.DiamondPlate, "Girder")
+		for i = -2, 2 do
+			part(model, Vector3.new(0.4, 2, 0.4), cf * CFrame.new(i * 6, 17.5, z), { 70, 70, 75 }, Enum.Material.Metal, "Rivet")
+		end
+	elseif style == "arch" or style == "gabled" then
+		for _, sx in ipairs({ -1, 1 }) do
+			part(model, Vector3.new(4, 18, 4), cf * CFrame.new(sx * (GATE_HALF + 1), 9, z), th.building, Enum.Material.Brick, "Tower")
+			part(model, Vector3.new(4.6, 1, 4.6), cf * CFrame.new(sx * (GATE_HALF + 1), 18.5, z), { 235, 235, 230 }, Enum.Material.SmoothPlastic, "Cornice")
+		end
+		if style == "gabled" then
+			local w = Instance.new("WedgePart")
+			w.Anchored, w.Size, w.Color, w.Material = true, Vector3.new(3, 8, 14), Color3.fromRGB(th.building[1], th.building[2], th.building[3]), Enum.Material.Brick
+			w.CFrame = cf * CFrame.new(-7, 23, z) * CFrame.Angles(0, rad(90), 0)
+			w.Parent = model
+			local w2 = w:Clone()
+			w2.CFrame = cf * CFrame.new(7, 23, z) * CFrame.Angles(0, rad(-90), 0)
+			w2.Parent = model
+		end
+	else -- classic
+		for _, sx in ipairs({ -1, 1 }) do
+			part(model, Vector3.new(2.5, 16, 2.5), cf * CFrame.new(sx * GATE_HALF, 8, z), accent, Enum.Material.SmoothPlastic, "GatePost")
+		end
+		gateH = 15
+	end
+	local beam = part(model, Vector3.new(28, 4, 2), cf * CFrame.new(0, gateH + 1.5, z) * CFrame.Angles(0, rad(180), 0), beamColor, Enum.Material.SmoothPlastic, "GateSign")
+	textOn(beam, Enum.NormalId.Front, title, { 212, 175, 55 }, 24).Name = "Title"
+	textOn(beam, Enum.NormalId.Back, title, { 212, 175, 55 }, 24)
+	local sub = part(model, Vector3.new(16, 1.8, 0.5), cf * CFrame.new(0, gateH - 1.6, z - 1.3), accent, Enum.Material.SmoothPlastic, "CitySign")
+	textOn(sub, Enum.NormalId.Front, string.upper(city.name), { 255, 255, 255 }, 24)
+end
+
+-- Ground, hall, walkways, facade and entrance. Rebuilt when the city changes.
 function PlotBuilder.buildBase(parent, index, cityId, ownerName)
 	local city = Cities.byId[cityId] or Cities.list[1]
 	local th = city.theme
+	local arch = ARCH[cityId] or ARCH.smalltown
 	local cf = PlotBuilder.plotCFrame(index)
 	local model = Instance.new("Model")
 	model.Name = "Base"
 	local ground = part(model, Vector3.new(Layout.WIDTH, 1, Layout.DEPTH), cf * CFrame.new(0, -0.5, 0), th.ground, material(th.groundMaterial), "Ground")
 	ground:SetAttribute("PlotGround", index)
-	-- paths: entrance, central corridor and the walkways in front of each room row
-	local pathColor = th.street
-	part(model, Vector3.new(16, 0.1, Layout.DEPTH - 24), cf * CFrame.new(0, 0.05, Layout.FRONT + 24 + (Layout.DEPTH - 24) / 2 - 12), pathColor, Enum.Material.Pavement, "Corridor")
+	-- central hall from reception to the back, walkways in front of every room row
+	local hallMat = material(arch.hall)
+	local hallLen = Layout.DEPTH / 2 - Layout.RECEPTION.z1 - 2
+	part(model, Vector3.new(Layout.CORRIDOR, 0.12, hallLen), cf * CFrame.new(0, 0.06, Layout.RECEPTION.z1 + hallLen / 2), arch.hallColor, hallMat, "CentralHall")
+	part(model, Vector3.new(1.2, 0.14, hallLen), cf * CFrame.new(0, 0.08, Layout.RECEPTION.z1 + hallLen / 2), th.accent, Enum.Material.SmoothPlastic, "HallStripe")
 	for row = 1, Layout.ROWS do
 		local s = Layout.slot((row - 1) * 4 + 1)
-		part(model, Vector3.new(Layout.WIDTH - 12, 0.1, Layout.WALKWAY), cf * CFrame.new(0, 0.06, s.walkZ), pathColor, Enum.Material.Pavement, "Walkway")
+		part(model, Vector3.new(Layout.WIDTH - 6, 0.1, Layout.WALKWAY), cf * CFrame.new(0, 0.05, s.walkZ), arch.hallColor, hallMat, "Walkway")
+		-- hall lighting and plants at every crossing
+		for _, sx in ipairs({ -1, 1 }) do
+			local lamp = part(model, Vector3.new(0.6, 9, 0.6), cf * CFrame.new(sx * (Layout.CORRIDOR / 2 - 0.6), 4.5, s.walkZ - Layout.WALKWAY / 2 + 0.6), { 40, 40, 45 }, Enum.Material.Metal, "HallLamp")
+			local bulb = part(model, Vector3.new(1.4, 0.6, 1.4), cf * CFrame.new(sx * (Layout.CORRIDOR / 2 - 0.6), 9.2, s.walkZ - Layout.WALKWAY / 2 + 0.6), { 255, 240, 210 }, Enum.Material.Neon, "HallBulb")
+			local light = Instance.new("PointLight")
+			light.Range = 22
+			light.Brightness = 0.9
+			light.Color = Color3.fromRGB(255, 236, 205)
+			light.Parent = bulb
+			lamp.CanCollide = false
+		end
 	end
-	-- perimeter facade (city architecture colour), entrance gap of 16
-	local wallH = 5
+	-- facade: material and height follow the city
+	local wallH = arch.height
 	local bc = th.building
+	local wallMat = material(arch.wall)
 	local half = Layout.WIDTH / 2
-	part(model, Vector3.new(Layout.WIDTH, wallH, 1.5), cf * CFrame.new(0, wallH / 2, Layout.DEPTH / 2 - 0.75), bc, Enum.Material.Brick, "PerimeterBack")
-	part(model, Vector3.new(1.5, wallH, Layout.DEPTH), cf * CFrame.new(-half + 0.75, wallH / 2, 0), bc, Enum.Material.Brick, "PerimeterL")
-	part(model, Vector3.new(1.5, wallH, Layout.DEPTH), cf * CFrame.new(half - 0.75, wallH / 2, 0), bc, Enum.Material.Brick, "PerimeterR")
-	local seg = (Layout.WIDTH - 16) / 2
-	part(model, Vector3.new(seg, wallH, 1.5), cf * CFrame.new(-half + seg / 2, wallH / 2, Layout.FRONT + 0.75), bc, Enum.Material.Brick, "PerimeterFL")
-	part(model, Vector3.new(seg, wallH, 1.5), cf * CFrame.new(half - seg / 2, wallH / 2, Layout.FRONT + 0.75), bc, Enum.Material.Brick, "PerimeterFR")
-	-- coping in the roof colour
-	part(model, Vector3.new(Layout.WIDTH, 0.5, 2), cf * CFrame.new(0, wallH + 0.25, Layout.DEPTH / 2 - 0.75), th.roof, Enum.Material.Slate, "Coping")
-
-	-- entrance gate with academy name
-	local gateH = 16
-	part(model, Vector3.new(2.5, gateH, 2.5), cf * CFrame.new(-9.5, gateH / 2, Layout.FRONT), th.accent, Enum.Material.SmoothPlastic, "GatePostL")
-	part(model, Vector3.new(2.5, gateH, 2.5), cf * CFrame.new(9.5, gateH / 2, Layout.FRONT), th.accent, Enum.Material.SmoothPlastic, "GatePostR")
-	local beam = part(model, Vector3.new(24, 4, 2), cf * CFrame.new(0, gateH + 1.5, Layout.FRONT) * CFrame.Angles(0, rad(180), 0), { 25, 25, 28 }, Enum.Material.SmoothPlastic, "GateSign")
-	local title = ownerName and (ownerName .. "'s Academy") or "FREE ACADEMY"
-	textOn(beam, Enum.NormalId.Front, title, { 212, 175, 55 }, 24).Name = "Title"
-	textOn(beam, Enum.NormalId.Back, title, { 212, 175, 55 }, 24)
-	local sub = part(model, Vector3.new(14, 1.6, 0.5), cf * CFrame.new(0, gateH - 1.4, Layout.FRONT - 1.3), th.accent, Enum.Material.SmoothPlastic, "CitySign")
-	textOn(sub, Enum.NormalId.Front, string.upper(city.name), { 255, 255, 255 }, 24)
+	part(model, Vector3.new(Layout.WIDTH, wallH, 1.5), cf * CFrame.new(0, wallH / 2, Layout.DEPTH / 2 - 0.75), bc, wallMat, "PerimeterBack")
+	part(model, Vector3.new(1.5, wallH, Layout.DEPTH), cf * CFrame.new(-half + 0.75, wallH / 2, 0), bc, wallMat, "PerimeterL")
+	part(model, Vector3.new(1.5, wallH, Layout.DEPTH), cf * CFrame.new(half - 0.75, wallH / 2, 0), bc, wallMat, "PerimeterR")
+	local seg = half - GATE_HALF
+	part(model, Vector3.new(seg, wallH, 1.5), cf * CFrame.new(-half + seg / 2, wallH / 2, Layout.FRONT + 0.75), bc, wallMat, "PerimeterFL")
+	part(model, Vector3.new(seg, wallH, 1.5), cf * CFrame.new(half - seg / 2, wallH / 2, Layout.FRONT + 0.75), bc, wallMat, "PerimeterFR")
+	for _, side in ipairs({ { 0, Layout.DEPTH / 2 - 0.75, Layout.WIDTH, 2 }, { -half + 0.75, 0, 2, Layout.DEPTH }, { half - 0.75, 0, 2, Layout.DEPTH } }) do
+		part(model, Vector3.new(side[3], 0.6, side[4]), cf * CFrame.new(side[1], wallH + 0.3, side[2]), th.roof, Enum.Material.Slate, "Coping")
+	end
+	buildGate(model, cf, city, arch, ownerName and (ownerName .. "'s Academy") or "FREE ACADEMY")
 	model.Parent = parent
 	return model
 end
@@ -126,42 +247,70 @@ function PlotBuilder.buildSurroundings(parent, index, cityId)
 	return model
 end
 
--- Reception: desk, register pad, lounge.
+-- Reception: wide lobby with glass front, desk and check-in queue, register,
+-- waiting lounge, trophies. The back opens onto the central hall.
 function PlotBuilder.buildReception(parent, index, cityId, level, passes)
 	local cf = PlotBuilder.plotCFrame(index)
 	local r = Layout.RECEPTION
+	local arch = ARCH[cityId] or ARCH.smalltown
 	local model = Instance.new("Model")
 	model.Name = "Reception"
 	local w, dpt = r.x1 - r.x0, r.z1 - r.z0
 	local centre = cf * CFrame.new((r.x0 + r.x1) / 2, 0, (r.z0 + r.z1) / 2)
-	part(model, Vector3.new(w, 0.4, dpt), centre * CFrame.new(0, 0.2, 0), { 225, 220, 210 }, Enum.Material.Marble, "Floor")
-	part(model, Vector3.new(w - 4, 0.06, 2), centre * CFrame.new(0, 0.43, -dpt / 2 + 2), { 150, 30, 30 }, Enum.Material.Fabric, "Carpet")
-	part(model, Vector3.new(6, 0.06, dpt - 4), centre * CFrame.new(0, 0.43, 0), { 150, 30, 30 }, Enum.Material.Fabric, "Carpet")
+	part(model, Vector3.new(w, 0.4, dpt), centre * CFrame.new(0, 0.2, 0), arch.hallColor, material(arch.hall), "Floor")
+	part(model, Vector3.new(24, 0.06, dpt - 2), centre * CFrame.new(0, 0.43, 0), { 150, 30, 30 }, Enum.Material.Fabric, "Carpet")
 	local wallC = { 40, 38, 36 }
-	part(model, Vector3.new(1, 10, dpt), centre * CFrame.new(-w / 2 + 0.5, 5, 0), wallC, Enum.Material.SmoothPlastic, "WallL")
-	part(model, Vector3.new(1, 10, dpt), centre * CFrame.new(w / 2 - 0.5, 5, 0), wallC, Enum.Material.SmoothPlastic, "WallR")
-	local backSeg = (w - 16) / 2
-	part(model, Vector3.new(backSeg, 10, 1), centre * CFrame.new(-w / 2 + backSeg / 2, 5, dpt / 2 - 0.5), wallC, Enum.Material.SmoothPlastic, "WallBL")
-	part(model, Vector3.new(backSeg, 10, 1), centre * CFrame.new(w / 2 - backSeg / 2, 5, dpt / 2 - 0.5), wallC, Enum.Material.SmoothPlastic, "WallBR")
-	part(model, Vector3.new(w + 0.4, 0.6, 1.4), centre * CFrame.new(0, 10.3, dpt / 2 - 0.5), { 212, 175, 55 }, Enum.Material.Metal, "Trim")
+	local wallH = 12
+	part(model, Vector3.new(1, wallH, dpt), centre * CFrame.new(-w / 2 + 0.5, wallH / 2, 0), wallC, Enum.Material.SmoothPlastic, "WallL")
+	part(model, Vector3.new(1, wallH, dpt), centre * CFrame.new(w / 2 - 0.5, wallH / 2, 0), wallC, Enum.Material.SmoothPlastic, "WallR")
+	-- back wall with a wide opening onto the hall
+	local opening = Layout.CORRIDOR + 4
+	local backSeg = (w - opening) / 2
+	part(model, Vector3.new(backSeg, wallH, 1), centre * CFrame.new(-w / 2 + backSeg / 2, wallH / 2, dpt / 2 - 0.5), wallC, Enum.Material.SmoothPlastic, "WallBL")
+	part(model, Vector3.new(backSeg, wallH, 1), centre * CFrame.new(w / 2 - backSeg / 2, wallH / 2, dpt / 2 - 0.5), wallC, Enum.Material.SmoothPlastic, "WallBR")
+	-- glass front on both sides of the entrance
+	local frontSeg = (w - 26) / 2
+	for _, sx in ipairs({ -1, 1 }) do
+		local glass = part(model, Vector3.new(frontSeg, wallH - 2, 0.4), centre * CFrame.new(sx * (13 + frontSeg / 2), (wallH - 2) / 2 + 0.4, -dpt / 2 + 1.6), { 180, 210, 230 }, Enum.Material.Glass, "Glass")
+		glass.Transparency = 0.55
+	end
+	part(model, Vector3.new(w + 0.4, 0.6, 1.4), centre * CFrame.new(0, wallH + 0.3, dpt / 2 - 0.5), { 212, 175, 55 }, Enum.Material.Metal, "Trim")
+	-- academy logo wall behind the desk
+	local logo = part(model, Vector3.new(16, 5, 0.3), centre * CFrame.new(-w / 2 + 12, 7, dpt / 2 - 1.2), { 20, 20, 24 }, Enum.Material.SmoothPlastic, "LogoWall")
+	textOn(logo, Enum.NormalId.Front, "WORLD MARTIAL ARTS ACADEMY", { 212, 175, 55 }, 24)
+	-- class board
+	local board = part(model, Vector3.new(10, 5, 0.3), centre * CFrame.new(w / 2 - 9, 7, dpt / 2 - 1.2), { 20, 20, 24 }, Enum.Material.SmoothPlastic, "ClassBoard")
+	textOn(board, Enum.NormalId.Front, "TODAY'S CLASSES\nKihon • Kata • Sparring • Randori", { 240, 240, 240 }, 20)
 
-	-- desk (faces the entrance) and lounge
+	-- desk (faces the entrance) and check-in queue rails
 	local desk = cf * CFrame.new(Layout.desk.x, 0, Layout.desk.z)
-	Props.build("desk", model, desk, { label = "WELCOME" })
-	Props.build("plant", model, cf * CFrame.new(r.x0 + 3, 0, r.z0 + 3), {})
-	Props.build("plant", model, cf * CFrame.new(r.x1 - 3, 0, r.z0 + 3), {})
-	Props.build("sofa", model, cf * CFrame.new(r.x1 - 6, 0, r.z1 - 4), {})
+	Props.build("desk", model, desk, { label = "CHECK-IN" })
+	for _, sx in ipairs({ -1, 1 }) do
+		local rail = part(model, Vector3.new(0.25, 3, 14), cf * CFrame.new(Layout.desk.x + sx * 9.5, 1.5, Layout.desk.z - 9), { 212, 175, 55 }, Enum.Material.Metal, "QueueRail")
+		rail.CanCollide = false
+	end
+	-- waiting lounge on the right side
+	Props.build("sofa", model, cf * CFrame.new(r.x1 - 8, 0, r.z1 - 5), {})
+	Props.build("sofa", model, cf * CFrame.new(r.x1 - 3.5, 0, r.z1 - 14) * CFrame.Angles(0, rad(-90), 0), {})
+	Props.build("plant", model, cf * CFrame.new(r.x0 + 3, 0, r.z0 + 4), {})
+	Props.build("plant", model, cf * CFrame.new(r.x1 - 3, 0, r.z0 + 4), {})
+	Props.build("plant", model, cf * CFrame.new(-Layout.CORRIDOR / 2 - 3, 0, r.z1 - 3), {})
+	Props.build("plant", model, cf * CFrame.new(Layout.CORRIDOR / 2 + 3, 0, r.z1 - 3), {})
 	if level >= 2 then
-		Props.build("trophy_case", model, cf * CFrame.new(r.x0 + 3, 0, r.z1 - 4) * CFrame.Angles(0, rad(-90), 0), {})
+		Props.build("trophy_case", model, cf * CFrame.new(r.x0 + 2.5, 0, r.z1 - 12) * CFrame.Angles(0, rad(-90), 0), {})
+		Props.build("belt_display", model, cf * CFrame.new(r.x0 + 1.2, 0, r.z0 + 16) * CFrame.Angles(0, rad(-90), 0), {})
 	end
 	if level >= 3 then
-		Props.build("chandelier", model, cf * CFrame.new(0, 0, (r.z0 + r.z1) / 2), {})
+		Props.build("chandelier", model, cf * CFrame.new(0, 2, (r.z0 + r.z1) / 2), {})
 	end
 	if level >= 4 then
-		Props.build("fountain", model, cf * CFrame.new(r.x1 - 8, 0, r.z0 + 8), {})
+		Props.build("fountain", model, cf * CFrame.new(r.x1 - 12, 0, r.z0 + 10), {})
+	end
+	if level >= 5 then
+		Props.build("statue", model, cf * CFrame.new(0, 0, r.z1 - 8) * CFrame.Angles(0, rad(180), 0), { label = "SENSEI" })
 	end
 	if passes and passes.premium_decor then
-		Props.build("statue", model, cf * CFrame.new(r.x0 + 6, 0, r.z0 + 5), { label = "LEGEND" })
+		Props.build("statue", model, cf * CFrame.new(r.x0 + 7, 0, r.z0 + 6), { label = "LEGEND" })
 	end
 	-- register pad
 	local pad = part(model, Vector3.new(5, 0.3, 5), cf * CFrame.new(Layout.register.x, 0.5, Layout.register.z), { 212, 175, 55 }, Enum.Material.Neon, "RegisterPad")

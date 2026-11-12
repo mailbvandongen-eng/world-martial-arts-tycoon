@@ -7,6 +7,7 @@ local Rooms = require(Config.Rooms)
 local Cities = require(Config.Cities)
 local Trainers = require(Config.Trainers)
 local Progression = require(Config.Progression)
+local Stations = require(script.Parent.Stations)
 
 local Formulas = {}
 
@@ -48,7 +49,8 @@ function Formulas.roomCapacity(roomId, level, trainerStats)
 	if trainerStats then
 		cap = cap + trainerStats.capacity
 	end
-	return math.min(cap, 24)
+	-- never more students than there are training positions in the room
+	return math.min(cap, 24, Stations.count(roomId, level))
 end
 
 -- Trainer level from XP

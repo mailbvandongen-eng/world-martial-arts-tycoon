@@ -8,6 +8,7 @@ local Shared = ReplicatedStorage.Shared
 local Layout = require(Shared.Modules.Layout)
 local Remotes = require(Shared.Modules.Remotes)
 local Format = require(Shared.Modules.Format)
+local Formulas = require(Shared.Modules.Formulas)
 
 local World = script.Parent.Parent.World
 local WorldBuilder = require(World.WorldBuilder)
@@ -123,7 +124,9 @@ function PlotService.buildRoom(index, slot)
 	local room = branch.rooms[tostring(slot)]
 	local slotCount = Academy.slotCount(d, d.activeCity)
 	if room then
-		p.built[slot] = RoomBuilder.build(p.roomsFolder, cf, slot, room, { plotIndex = index, passes = passesOf(d), now = now() })
+		local trainer = room.trainer and d.trainers[room.trainer]
+		local capacity = Formulas.roomCapacity(room.id, room.level, trainer and Formulas.trainerStats(trainer) or nil)
+		p.built[slot] = RoomBuilder.build(p.roomsFolder, cf, slot, room, { plotIndex = index, passes = passesOf(d), now = now(), capacity = capacity })
 	elseif slot <= Layout.MAX_SLOTS then
 		local locked = slot > slotCount
 		-- show at most one row of locked slots to hint at expansion

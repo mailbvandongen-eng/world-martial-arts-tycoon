@@ -26,7 +26,9 @@ def main():
     cz = sum(p[2] for p in parts) / len(parts)
     target = (cx, 0.0, cz)
     # entrance of plot 5 faces -z (towards the boulevard)
-    eye = (cx + 120.0, 210.0, cz - 230.0)
+    import os
+    eye_scale = float(os.environ.get("EYE", "1"))
+    eye = (cx + 120.0 * eye_scale, 210.0 * eye_scale, cz - 230.0 * eye_scale)
     fwd = [target[i] - eye[i] for i in range(3)]
     fl = math.sqrt(sum(f * f for f in fwd))
     fwd = [f / fl for f in fwd]
@@ -34,7 +36,7 @@ def main():
     rl = math.sqrt(sum(r * r for r in right))
     right = [r / rl for r in right]
     up = [right[1] * fwd[2] - right[2] * fwd[1], right[2] * fwd[0] - right[0] * fwd[2], right[0] * fwd[1] - right[1] * fwd[0]]
-    W, H = 1800, 1200
+    W, H = int(os.environ.get("W", "1800")), int(os.environ.get("H", "1200"))
 
     def project(p):
         d = [p[i] - eye[i] for i in range(3)]

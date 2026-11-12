@@ -329,10 +329,15 @@ end
 function Rig.apply(rig, base, pose)
 	local parts = Rig.compute(rig, base, pose)
 	local lowest = math.huge
-	for _, name in ipairs(BODY_PARTS) do
-		local y = minY(parts[name], rig.parts[name].Size)
-		if y < lowest then
-			lowest = y
+	if pose.seat then
+		-- seated: the hips rest on the seat (base.Y is the seat height)
+		lowest = minY(parts.Hips, rig.parts.Hips.Size)
+	else
+		for _, name in ipairs(BODY_PARTS) do
+			local y = minY(parts[name], rig.parts[name].Size)
+			if y < lowest then
+				lowest = y
+			end
 		end
 	end
 	local lift = base.Y - lowest

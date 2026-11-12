@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Layout = require(Shared.Modules.Layout)
 local Visits = require(Shared.Modules.Visits)
+local Stations = require(Shared.Modules.Stations)
 local Rig = require(Shared.Modules.Rig)
 local Poses = require(Shared.Modules.Poses)
 local Appearance = require(Shared.Modules.Appearance)
@@ -33,6 +34,7 @@ local staff = {} -- plot -> entry
 local champs = {} -- plot -> entry
 local rankups = {} -- "plot:slot" -> until time
 local sessions = {} -- "plot:slot" -> { tSession, tEnd } latest
+local sessionSeats = {} -- "plot:slot@tSession" -> { [station] = true, expires }
 local plotCFs = {}
 local audio -- AudioController (optional)
 local frame = 0
@@ -50,20 +52,20 @@ local function floorY(p)
 	if p.x >= r.x0 and p.x <= r.x1 and p.z >= r.z0 and p.z <= r.z1 then
 		return 0.4
 	end
-	if p.z > r.z1 and math.abs(p.x) > 8 then
-		-- inside a room column? rooms start after the walkway of their row
+	if p.z > r.z1 and math.abs(p.x) > Layout.CORRIDOR / 2 then
+		-- inside a room cell? rooms start behind the walkway of their row
 		local rel = (p.z - r.z1) % Layout.ROW_PITCH
 		if rel >= Layout.WALKWAY then
 			return 0.4
 		end
 	end
-	return 0.1
+	return 0.12
 end
 
 -- World CFrame at plot-local point facing direction (dx, dz) in plot space.
-local function worldCF(index, p, dx, dz)
+local function worldCF(index, p, dx, dz, y)
 	local cf = plotCF(index)
-	local pos = cf * Vector3.new(p.x, floorY(p), p.z)
+	local pos = cf * Vector3.new(p.x, y or floorY(p), p.z)
 	local dir = cf:VectorToWorldSpace(Vector3.new(dx, 0, dz))
 	if dir.Magnitude < 1e-3 then
 		dir = cf.LookVector
@@ -172,12 +174,28 @@ local function destroyRig(entry)
 	end
 end
 
+-- Is the partner seat of a pair station taken in the same class session?
+local function partnerPresent(entry, st)
+	if not st.pair then
+		return false
+	end
+	local plan = entry.plan
+	local seats = sessionSeats[entry.plot .. ":" .. plan.slot .. "@" .. tostring(plan.tSession)]
+	return seats ~= nil and seats[st.pair] == true
+end
+
 local function visitorPose(entry, now)
 	local plan = entry.plan
-	local p, hx, hz, phase = Visits.sample(entry.segs, now)
+	local p, hx, hz, phase, seg = Visits.sample(entry.segs, now)
 	local moves = movesFor(entry.plot, plan.slot, plan.interest)
 	local move, t
 	local dx, dz = hx, hz
+	local y
+	local st = seg and seg.station
+	if st and (phase == "ready" or phase == "train" or phase == "amenity") then
+		dx, dz = Stations.faceVector(st.face)
+		y = st.y
+	end
 	if phase == "walk" then
 		move, t = Poses.moves.walk, now - plan.t0
 	elseif phase == "queue" then
@@ -188,9 +206,7 @@ local function visitorPose(entry, now)
 		dx, dz = 0, 1
 	elseif phase == "ready" then
 		move, t = Poses.moves[moves.idle] or Poses.moves.idle, now
-		dx, dz = 0, 1
 	elseif phase == "train" then
-		dx, dz = 0, 1
 		local key = entry.plot .. ":" .. tostring(plan.slot)
 		local since = now - plan.tSession
 		if rankups[key] and now < rankups[key] then
@@ -198,12 +214,19 @@ local function visitorPose(entry, now)
 		else
 			local period = math.floor(since / DRILL_PERIOD)
 			local pairMoves = moves.pair
-			if pairMoves and period % 2 == 1 and (plan.classTier or 1) >= 2 then
-				-- partner work: odd spots face right, even spots face left
-				local odd = plan.spot % 2 == 1
-				move = Poses.moves[odd and pairMoves[1] or pairMoves[2]]
-				dx, dz = odd and 1 or -1, 0
+			local hasPartner = st and partnerPresent(entry, st)
+			if st and st.ring and hasPartner then
+				-- sparring / bout practice with the partner in the ring or on the dohyo
+				local list = st.moves or (pairMoves and { pairMoves[1] }) or moves.drill
+				move = Poses.moves[list[(period + plan.spot) % #list + 1]] or Poses.moves.idle
+			elseif hasPartner and pairMoves and period % 2 == 1 and (plan.classTier or 1) >= 2 then
+				-- partner drill: the lower station throws / attacks, the other receives
+				move = Poses.moves[(plan.spot < st.pair) and pairMoves[1] or pairMoves[2]]
+			elseif st and st.moves then
+				-- equipment station: bag, makiwara, machine... uses its own moves
+				move = Poses.moves[st.moves[(period + plan.spot) % #st.moves + 1]] or Poses.moves.idle
 			else
+				-- formation: the whole class performs the same technique in sync
 				local drill = moves.drill
 				local idx = (math.floor(plan.tSession) + period) % #drill + 1
 				move = Poses.moves[drill[idx]] or Poses.moves.idle
@@ -211,14 +234,12 @@ local function visitorPose(entry, now)
 			t = since % DRILL_PERIOD
 		end
 	elseif phase == "amenity" then
-		local info = plan.amenitySlot and roomInfo(entry.plot, plan.amenitySlot)
-		local rm = info and Poses.roomMoves[info.id]
-		move, t = Poses.moves[rm and rm.idle or "idle"] or Poses.moves.idle, now
-		dx, dz = 0, 1
+		local list = st and st.moves or { "idle" }
+		move, t = Poses.moves[list[1]] or Poses.moves.idle, now + plan.seed % 9
 	else
 		return nil
 	end
-	return worldCF(entry.plot, p, dx, dz), move, t
+	return worldCF(entry.plot, p, dx, dz, y), move, t
 end
 
 local function addPlans(plotIndex, list)
@@ -227,6 +248,10 @@ local function addPlans(plotIndex, list)
 		local segs = Visits.timeline(plan)
 		visitors[key] = { key = key, plot = plotIndex, plan = plan, segs = segs, lastT = 0 }
 		if plan.outcome == "train" and plan.slot then
+			-- seat reservations of this class session (for partner drills)
+			local seatKey = plotIndex .. ":" .. plan.slot .. "@" .. tostring(plan.tSession)
+			sessionSeats[seatKey] = sessionSeats[seatKey] or { expires = plan.tEnd + 30 }
+			sessionSeats[seatKey][plan.spot] = true
 			local skey = plotIndex .. ":" .. plan.slot
 			local s = sessions[skey]
 			if not s or plan.tEnd > s.tEnd then
@@ -275,9 +300,10 @@ local function syncTrainers()
 						existing = nil
 					end
 					if not existing then
-						trainers[key] = { key = key, plot = plotIndex, slot = tonumber(slot), trainer = t, sig = trainerKey(t), roomId = room.id }
+						trainers[key] = { key = key, plot = plotIndex, slot = tonumber(slot), trainer = t, sig = trainerKey(t), roomId = room.id, level = room.level }
 					else
 						existing.roomId = room.id
+						existing.level = room.level
 					end
 				end
 			end
@@ -323,16 +349,23 @@ local function trainerPose(entry, now)
 	local teaching = s and now >= s.tSession and now <= s.tEnd
 	local moves = movesFor(entry.plot, entry.slot, Disciplines.byId[entry.trainer.discipline] and entry.trainer.discipline or nil)
 	local move
+	local info = Stations.forRoom(entry.roomId, entry.level or 1)
+	local spot = info.trainer or { x = 0, z = info.d - 3, face = 180 }
 	if rankups[key] and now < rankups[key] then
 		move = Poses.moves.coach_clap
+	elseif teaching and spot.pads then
+		-- pad work with the student in front of the ring
+		local period = math.floor((now - s.tSession) / DRILL_PERIOD)
+		move = Poses.moves[period % 3 == 2 and "coach_point" or "coach_mitts"]
 	elseif teaching and moves.teach then
 		local period = math.floor((now - s.tSession) / DRILL_PERIOD)
 		move = Poses.moves[moves.teach[period % #moves.teach + 1]] or Poses.moves.coach_point
 	else
 		move = Poses.moves[moves.idle] or Poses.moves.idle
 	end
-	local p = Layout.trainerSpot(entry.slot)
-	return worldCF(entry.plot, p, 0, -1), move, now + entry.trainer.seed % 10
+	local p = Stations.plotPoint(entry.slot, entry.roomId, entry.level or 1, spot.x, spot.z)
+	local dx, dz = Stations.faceVector(spot.face)
+	return worldCF(entry.plot, p, dx, dz), move, now + entry.trainer.seed % 10
 end
 
 ---------------------------------------------------------------- championships
@@ -356,7 +389,8 @@ end
 
 local function updateChamp(plotIndex, c, now)
 	local info = c.info
-	local s = Layout.slot(info.slot)
+	local arena = Stations.forRoom("arena", 1)
+	local centre = Stations.plotPoint(info.slot, "arena", 1, arena.extras.centre.x, arena.extras.centre.z)
 	local disc = Disciplines.byId[info.discipline]
 	if now > info.endAt + 4 then
 		for _, f in ipairs(c.fighters) do
@@ -366,8 +400,8 @@ local function updateChamp(plotIndex, c, now)
 		return
 	end
 	for i, f in ipairs(c.fighters) do
-		local p = { x = s.cx + f.side * 2.2, z = s.z0 + 19.6 }
-		local cf = worldCF(plotIndex, p, -f.side, 0) + Vector3.new(0, 1.1, 0)
+		local p = { x = centre.x + f.side * 2.2, z = centre.z }
+		local cf = worldCF(plotIndex, p, -f.side, 0, 1.5)
 		local move, t
 		if now > info.endAt then
 			move = i == 1 and Poses.moves.emote_champion or Poses.moves.emote_bow
@@ -400,6 +434,13 @@ end
 local function step()
 	frame = frame + 1
 	local now = workspace:GetServerTimeNow()
+	if frame % 600 == 0 then
+		for k, seats in pairs(sessionSeats) do
+			if seats.expires < now then
+				sessionSeats[k] = nil
+			end
+		end
+	end
 	local cam = cameraPos()
 	local cap = npcCap()
 	local rendered = 0

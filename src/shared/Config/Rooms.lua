@@ -30,8 +30,14 @@ local list = {
 	},
 }
 
+-- Halls for disciplines with a ring, dohyo, octagon or lots of partner work start bigger.
+local BIG_HALLS = { boxing = true, judo = true, sumo = true, mma = true, muaythai = true, kickboxing = true, wrestling = true, bjj = true }
+
 for _, d in ipairs(Disciplines.list) do
+	local big = BIG_HALLS[d.id]
 	table.insert(list, {
+		size = big and { 32, 28 } or { 30, 26 },
+		grow = big and 2 or 2.5,
 		id = d.id .. "_room",
 		name = d.name .. (d.id == "sumo" and " Arena" or d.id == "mma" and " Octagon" or (d.id == "karate" or d.id == "judo") and " Dojo" or " Room"),
 		kind = "training",
@@ -48,17 +54,18 @@ for _, d in ipairs(Disciplines.list) do
 end
 
 local extra = {
-	{ id = "fitness_room", name = "Fitness Room", kind = "training", discipline = "fitness", cost = 1200, unlockLevel = 4, capacity = 6, capacityPerLevel = 2, needsTrainer = false, basePay = 7, description = "General fitness. Attracts fitness enthusiasts, no trainer needed.", color = { 60, 180, 200 }, icon = "F" },
-	{ id = "strength_room", name = "Strength Room", kind = "training", discipline = "fitness", cost = 6000, unlockLevel = 7, capacity = 5, capacityPerLevel = 2, needsTrainer = false, basePay = 11, description = "Barbells and racks. Fitness enthusiasts and athletes.", color = { 90, 90, 100 }, icon = "S" },
-	{ id = "cardio_room", name = "Cardio Room", kind = "training", discipline = "fitness", cost = 15000, unlockLevel = 9, capacity = 6, capacityPerLevel = 2, needsTrainer = false, basePay = 14, description = "Treadmills, bikes and rowers.", color = { 230, 80, 120 }, icon = "C" },
-	{ id = "coaching_room", name = "Personal Coaching", kind = "coaching", cost = 35000, unlockLevel = 11, capacity = 2, capacityPerLevel = 1, needsTrainer = true, payMult = 2.4, description = "Private lessons for dedicated students. Any trainer.", color = { 200, 160, 60 }, icon = "P" },
-	{ id = "vip_room", name = "VIP Training Room", kind = "vip", cost = 400000, unlockLevel = 20, capacity = 3, capacityPerLevel = 1, needsTrainer = true, payMult = 4.0, description = "Luxury training for VIPs and celebrities. Any trainer.", color = { 212, 175, 55 }, icon = "V" },
-	{ id = "locker_room", name = "Locker Rooms", kind = "amenity", cost = 2500, unlockLevel = 5, satisfaction = 4, description = "+satisfaction for every visitor.", color = { 120, 140, 160 }, icon = "L" },
-	{ id = "showers", name = "Showers", kind = "amenity", cost = 9000, unlockLevel = 8, satisfaction = 5, description = "+satisfaction for every visitor.", color = { 80, 170, 220 }, icon = "W" },
-	{ id = "recovery_room", name = "Recovery Room", kind = "amenity", cost = 60000, unlockLevel = 14, satisfaction = 7, description = "Ice baths and massage tables. Big satisfaction boost.", color = { 120, 200, 200 }, icon = "R" },
-	{ id = "juice_bar", name = "Juice Bar", kind = "shop", cost = 4000, unlockLevel = 6, shopSpend = 6, shopChance = 0.45, description = "Visitors buy drinks and supplements after class.", color = { 120, 200, 60 }, icon = "J" },
-	{ id = "merch_shop", name = "Merchandise Shop", kind = "shop", cost = 20000, unlockLevel = 10, shopSpend = 15, shopChance = 0.3, description = "Gloves, belts, uniforms with your academy logo.", color = { 160, 90, 200 }, icon = "M" },
-	{ id = "arena", name = "Championship Arena", kind = "arena", cost = 750000, unlockLevel = 24, description = "Host championships for big prize money and reputation.", color = { 230, 50, 50 }, icon = "A" },
+	{ id = "fitness_room", size = { 28, 24 }, grow = 3, name = "Fitness Room", kind = "training", discipline = "fitness", cost = 1200, unlockLevel = 4, capacity = 6, capacityPerLevel = 2, needsTrainer = false, basePay = 7, description = "General fitness. Attracts fitness enthusiasts, no trainer needed.", color = { 60, 180, 200 }, icon = "F" },
+	{ id = "strength_room", size = { 28, 24 }, grow = 3, name = "Strength Room", kind = "training", discipline = "fitness", cost = 6000, unlockLevel = 7, capacity = 5, capacityPerLevel = 2, needsTrainer = false, basePay = 11, description = "Barbells and racks. Fitness enthusiasts and athletes.", color = { 90, 90, 100 }, icon = "S" },
+	{ id = "cardio_room", size = { 28, 24 }, grow = 3, name = "Cardio Room", kind = "training", discipline = "fitness", cost = 15000, unlockLevel = 9, capacity = 6, capacityPerLevel = 2, needsTrainer = false, basePay = 14, description = "Treadmills, bikes and rowers.", color = { 230, 80, 120 }, icon = "C" },
+	{ id = "coaching_room", size = { 22, 20 }, grow = 2, name = "Personal Coaching", kind = "coaching", cost = 35000, unlockLevel = 11, capacity = 2, capacityPerLevel = 1, needsTrainer = true, payMult = 2.4, description = "Private lessons for dedicated students. Any trainer.", color = { 200, 160, 60 }, icon = "P" },
+	{ id = "vip_room", size = { 26, 22 }, grow = 2.5, name = "VIP Training Room", kind = "vip", cost = 400000, unlockLevel = 20, capacity = 3, capacityPerLevel = 1, needsTrainer = true, payMult = 4.0, description = "Luxury training for VIPs and celebrities. Any trainer.", color = { 212, 175, 55 }, icon = "V" },
+	{ id = "locker_room", size = { 20, 18 }, grow = 2, name = "Locker Rooms", kind = "amenity", cost = 2500, unlockLevel = 5, satisfaction = 4, description = "+satisfaction for every visitor.", color = { 120, 140, 160 }, icon = "L" },
+	{ id = "showers", size = { 18, 16 }, grow = 2, name = "Showers", kind = "amenity", cost = 9000, unlockLevel = 8, satisfaction = 5, description = "+satisfaction for every visitor.", color = { 80, 170, 220 }, icon = "W" },
+	{ id = "restrooms", size = { 16, 14 }, grow = 1.5, name = "Restrooms", kind = "amenity", cost = 1500, unlockLevel = 3, satisfaction = 3, description = "Clean restrooms. Small satisfaction boost for every visitor.", color = { 150, 170, 190 }, icon = "WC" },
+	{ id = "recovery_room", size = { 22, 20 }, grow = 2, name = "Recovery Room", kind = "amenity", cost = 60000, unlockLevel = 14, satisfaction = 7, description = "Ice baths and massage tables. Big satisfaction boost.", color = { 120, 200, 200 }, icon = "R" },
+	{ id = "juice_bar", size = { 22, 18 }, grow = 2, name = "Juice Bar", kind = "shop", cost = 4000, unlockLevel = 6, shopSpend = 6, shopChance = 0.45, description = "Visitors buy drinks and supplements after class.", color = { 120, 200, 60 }, icon = "J" },
+	{ id = "merch_shop", size = { 22, 18 }, grow = 2, name = "Merchandise Shop", kind = "shop", cost = 20000, unlockLevel = 10, shopSpend = 15, shopChance = 0.3, description = "Gloves, belts, uniforms with your academy logo.", color = { 160, 90, 200 }, icon = "M" },
+	{ id = "arena", size = { 40, 36 }, grow = 0, name = "Championship Arena", kind = "arena", cost = 750000, unlockLevel = 24, description = "Host championships for big prize money and reputation.", color = { 230, 50, 50 }, icon = "A" },
 }
 for _, r in ipairs(extra) do
 	table.insert(list, r)
@@ -80,6 +87,7 @@ Rooms.generalStyle = {
 	coaching_room = { floor = "wood", floorColor = { 150, 110, 70 }, wallColor = { 60, 50, 45 }, trimColor = { 200, 160, 60 }, wallMaterial = "WoodPlanks", equipment = { "heavy_bag", "mirror", "plant", "bench" }, sign = "PERSONAL COACHING" },
 	vip_room = { floor = "marble", floorColor = { 235, 230, 220 }, wallColor = { 30, 28, 26 }, trimColor = { 212, 175, 55 }, wallMaterial = "Marble", equipment = { "heavy_bag_gold", "plant", "sofa", "mirror", "plant", "chandelier" }, sign = "VIP LOUNGE" },
 	locker_room = { floor = "tiles", floorColor = { 200, 205, 210 }, wallColor = { 120, 140, 160 }, trimColor = { 60, 70, 80 }, wallMaterial = "SmoothPlastic", equipment = { "lockers", "bench", "lockers", "lockers", "bench", "lockers" }, sign = "LOCKERS" },
+	restrooms = { floor = "tiles", floorColor = { 225, 228, 232 }, wallColor = { 150, 170, 190 }, trimColor = { 250, 250, 250 }, wallMaterial = "SmoothPlastic", equipment = { "stall", "stall", "sink", "stall", "sink", "stall" }, sign = "RESTROOMS" },
 	showers = { floor = "tiles", floorColor = { 220, 230, 235 }, wallColor = { 80, 170, 220 }, trimColor = { 240, 240, 240 }, wallMaterial = "Glass", equipment = { "shower", "shower", "shower", "bench", "shower", "shower" }, sign = "SHOWERS" },
 	recovery_room = { floor = "wood", floorColor = { 200, 180, 150 }, wallColor = { 220, 240, 238 }, trimColor = { 120, 200, 200 }, wallMaterial = "SmoothPlastic", equipment = { "massage_table", "ice_bath", "plant", "massage_table", "ice_bath", "plant" }, sign = "RECOVERY" },
 	juice_bar = { floor = "tiles", floorColor = { 240, 235, 220 }, wallColor = { 120, 200, 60 }, trimColor = { 250, 250, 250 }, wallMaterial = "SmoothPlastic", equipment = { "bar_counter", "stool", "fridge", "stool", "plant", "stool" }, sign = "JUICE BAR" },
