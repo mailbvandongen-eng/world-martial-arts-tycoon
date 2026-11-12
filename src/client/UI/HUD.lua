@@ -104,8 +104,21 @@ function HUD.build(ui)
 	refs.missionBadge, refs.dailyBadge, refs.objText = missionBadge, dailyBadge, objText
 
 	-- right column: main navigation
-	local right = Kit.frame(layer, { BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -10, 0, 62), Size = UDim2.fromOffset(84, 540) })
-	Kit.list(right, 8)
+	-- On touch screens the Roblox jump button sits bottom-right: the seven
+	-- buttons go in a 3-column block at the top so none of them covers it.
+	local right
+	if touch then
+		right = Kit.frame(layer, { BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -10, 0, 62), Size = UDim2.fromOffset(268, 216) })
+		local grid = Instance.new("UIGridLayout")
+		grid.CellSize = UDim2.fromOffset(84, 66)
+		grid.CellPadding = UDim2.fromOffset(8, 8)
+		grid.SortOrder = Enum.SortOrder.LayoutOrder
+		grid.HorizontalAlignment = Enum.HorizontalAlignment.Right
+		grid.Parent = right
+	else
+		right = Kit.frame(layer, { BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -10, 0, 62), Size = UDim2.fromOffset(84, 540) })
+		Kit.list(right, 8)
+	end
 	local nav = {
 		{ "🔨", "Build", function()
 			HUD.openBuild(ui)

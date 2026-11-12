@@ -185,6 +185,16 @@ function DataService.isSandbox(player)
 	return p ~= nil and p.sandbox == true
 end
 
+-- The player's real progress (also while a developer is in the sandbox).
+-- Robux purchases are always granted here, never to sandbox test data.
+function DataService.realData(player)
+	local p = profiles[player]
+	if not p then
+		return nil
+	end
+	return p.sandbox and p.realData or p.data
+end
+
 -- Replace the (sandboxed) save with another table, e.g. a test scenario.
 function DataService.replaceData(player, data)
 	local p = profiles[player]
@@ -201,10 +211,7 @@ function DataService.save(player, release)
 	if not p then
 		return false
 	end
-	if p.sandbox then
-		if not release then
-			return true -- sandbox: pretend success, keep the real save untouched
-		end
+	if p.sandbox and release then
 		-- leaving while sandboxed: store the real progress, not the test data
 		p.data = Schema.validate(Schema.migrate(p.realData))
 		p.sandbox = false
@@ -214,8 +221,10 @@ function DataService.save(player, release)
 		task.wait(0.1)
 	end
 	p.saving = true
-	p.data.lastOnline = os.time()
-	local snapshot = p.data
+	-- in the sandbox the real progress is saved (keeps the session lock fresh
+	-- and keeps purchases made meanwhile); the test data is never written
+	local snapshot = p.sandbox and p.realData or p.data
+	snapshot.lastOnline = os.time()
 	local ownLock = true
 	local ok = update(STORE_NAME, keyFor(player.UserId), function(old)
 		old = old or {}

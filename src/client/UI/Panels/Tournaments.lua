@@ -110,7 +110,7 @@ return {
 				lines = lines .. string.format("%s: %s  •  ◆%d  •  +%d reputation\n", label, Format.cash(p.cash * unit), p.gems, p.reputation)
 			end
 			Kit.label(prizes, lines, { Position = UDim2.fromOffset(14, 8), Size = UDim2.new(1, -28, 1, -16), TextSize = 13, TextYAlignment = Enum.TextYAlignment.Top })
-			Kit.label(scroll, "Your academy's strength comes from your mastery rank, your best trainer and your best room in the discipline. Matches are fought in the Tournament Arena on the boulevard.", { Size = UDim2.new(1, -8, 0, 40), TextColor3 = C.muted, TextSize = 12, LayoutOrder = 11 })
+			Kit.label(scroll, "Matches are simulated by the server from each academy's strength (mastery rank, best trainer, best room in the discipline); you do not fight them yourself. The featured match is replayed in the Tournament Arena on the boulevard.", { Size = UDim2.new(1, -8, 0, 40), TextColor3 = C.muted, TextSize = 12, LayoutOrder = 11 })
 		end
 		render(true)
 		local conn = State.TournamentChanged:Connect(function()

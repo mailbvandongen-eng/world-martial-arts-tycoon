@@ -309,7 +309,8 @@ function RoomBuilder.build(parent, plotCF, slot, room, opts)
 			Props.build("mirror", model, at(W / 2 - 5.5, D - 0.7, 180), propOpts)
 		end
 	end
-	if room.level >= 5 then
+	if room.level >= 5 and def.kind ~= "amenity" then
+		-- (amenity rooms have visit spots along the back wall)
 		Props.build("trophy_case", model, at(W / 2 - 1.6, D - 3, 270), {})
 	end
 	if (opts.passes or {}).gym_lighting then

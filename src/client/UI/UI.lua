@@ -42,8 +42,12 @@ local function updateScale()
 end
 
 function UI.viewport()
+	-- the area the interface may use (without the Roblox menu bar / notches)
 	local cam = workspace.CurrentCamera
 	local v = cam and cam.ViewportSize or Vector2.new(1280, 720)
+	if gui and gui.AbsoluteSize.X > 0 then
+		v = gui.AbsoluteSize
+	end
 	return v / (scale and scale.Scale or 1)
 end
 

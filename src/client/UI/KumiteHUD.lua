@@ -95,6 +95,25 @@ function KumiteHUD.start(ui)
 		Kit.corner(chip, 10)
 		chips[i] = chip
 	end
+	local conn, keyConn
+	-- leave the bout (counts as a loss)
+	Kit.button(root, "✕ Leave bout", function()
+		if finished then
+			return
+		end
+		finished = true
+		if conn then
+			conn:Disconnect()
+		end
+		if keyConn then
+			keyConn:Disconnect()
+		end
+		State.call("quitKumite", nil, true)
+		root:Destroy()
+		running = false
+		BoutController.setLiveScore(nil, nil)
+		ui.toast("You left the mat (counts as a loss).", "warn")
+	end, { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -222), Size = UDim2.fromOffset(170, 40), TextSize = 14, Font = Kit.fontBlack }, "dark")
 	local buttons = Kit.frame(panel, { BackgroundTransparency = 1, Position = UDim2.fromOffset(10, 110), Size = UDim2.new(1, -20, 0, 86) })
 	local bl = Kit.list(buttons, 10, true)
 	bl.HorizontalAlignment = Enum.HorizontalAlignment.Center
@@ -114,7 +133,6 @@ function KumiteHUD.start(ui)
 		push(call)
 	end
 
-	local conn, keyConn
 	local function finish()
 		if finished then
 			return

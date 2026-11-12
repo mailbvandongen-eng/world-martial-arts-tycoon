@@ -102,8 +102,9 @@ local function sideStations(list, w, d, count, spec, zStart)
 				local face = side > 0 and 90 or 270
 				local floor = spec.floor
 				add(list, {
-					x = side * (half - (floor and 4.5 or 3.6)), z = z, face = face, kind = "equipment",
-					moves = spec.moves, prop = spec.prop, propX = side * (half - (floor and 2.6 or 1.6)), propZ = z,
+					-- floor dummies are 4.6 studs long: keep their legs off the wall
+					x = side * (half - (floor and 5.2 or 3.6)), z = z, face = face, kind = "equipment",
+					moves = spec.moves, prop = spec.prop, propX = side * (half - (floor and 3.3 or 1.6)), propZ = z,
 					propFace = face + 180, lane = side * (half - 6.5),
 				})
 				n = n + 1
@@ -190,6 +191,8 @@ local function templateGrappling(def, level, w, d)
 	return list, trainer, { decor = { "belt_display", "kamiza_back" } }
 end
 
+local BASE_HALF = 8 -- half the size of the dohyo's square base (Props.dohyo_round)
+
 local function templateSumo(def, level, w, d)
 	local list = {}
 	local half = w / 2
@@ -214,7 +217,14 @@ local function templateSumo(def, level, w, d)
 		if z > 5 and z < d - 1.5 and math.abs(x) < half - 2 then
 			-- standing at angle ang around the centre, looking back at the centre
 			local face = (math.deg(ang) + 180) % 360
-			add(list, { x = x, z = z, face = face, kind = "line", moves = { "sumo_shiko", "sumo_crouch", "sumo_shiko" } })
+			-- the dohyo stands on a 16x16 base (0.9 high): corner spots stand on
+			-- the base, spots behind the dohyo are reached around its side
+			local onBase = math.abs(x) < BASE_HALF + 0.4 and math.abs(z - cz) < BASE_HALF + 0.4
+			local lane = x
+			if z > cz and math.abs(x) < BASE_HALF + 1.2 then
+				lane = (x < 0 and -1 or 1) * (BASE_HALF + 1.5)
+			end
+			add(list, { x = x, z = z, face = face, y = onBase and 0.9 or nil, lane = lane, kind = "line", moves = { "sumo_shiko", "sumo_crouch", "sumo_shiko" } })
 		end
 	end
 	local trainer = { x = 0, z = d - 1.8, face = 180 }
@@ -251,12 +261,15 @@ local function templateFitness(def, level, w, d)
 	local i = 0
 	local z = d - 4.5
 	while z >= 7.5 do
-		for _, x in ipairs(centred(half - 4, 5.5)) do
+		-- racks and benches are 5.5 studs wide: strength machines need wider columns
+		local spacing = def.id == "strength_room" and 7.4 or 5.5
+		for _, x in ipairs(centred(half - 4, spacing)) do
 			i = i + 1
 			local m = machines[(i - 1) % #machines + 1]
 			add(list, {
 				x = x, z = z, face = 0, y = m.y, kind = "machine", moves = m.moves, prop = m.prop,
-				propX = x, propZ = z + (m.ahead or 0), propFace = m.propFace or 0, lane = x,
+				-- walk in between the machine columns, not through the machines in front
+				propX = x, propZ = z + (m.ahead or 0), propFace = m.propFace or 0, lane = x + (x <= 0 and spacing / 2 or -spacing / 2),
 			})
 		end
 		z = z - 5.2
@@ -315,7 +328,7 @@ local function templateAmenity(def, level, w, d)
 			for _, x in ipairs(centred(half - 5, 7)) do
 				i = i + 1
 				local s = (i % 2 == 0 and spec.alt) or spec
-				add(list, { x = x, z = z, face = 0, y = s.y, kind = "visit", moves = s.moves, prop = s.prop, propX = x, propZ = z, propFace = 0, lane = x })
+				add(list, { x = x, z = z, face = 0, y = s.y, kind = "visit", moves = s.moves, prop = s.prop, propX = x, propZ = z, propFace = 0, lane = x + (x <= 0 and 3.5 or -3.5) })
 			end
 			z = z - 7
 		end

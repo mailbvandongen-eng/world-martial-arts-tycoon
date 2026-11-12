@@ -543,7 +543,8 @@ defs.stall = function(c)
 	c:box(V(3, 7, 0.2), V(0, 3.5, 1.5), { 200, 205, 210 }, MAT.SmoothPlastic)
 	c:box(V(0.2, 7, 3), V(-1.5, 3.5, 0), { 200, 205, 210 }, MAT.SmoothPlastic)
 	c:box(V(0.2, 7, 3), V(1.5, 3.5, 0), { 200, 205, 210 }, MAT.SmoothPlastic)
-	local door = c:box(V(2.6, 6, 0.15), V(0.2, 3.3, -1.5), { 150, 170, 190 }, MAT.SmoothPlastic, { 0, -25, 0 })
+	-- door swung fully open against the outside of the left wall, out of the way
+	local door = c:box(V(2.6, 6, 0.15), V(-1.6, 3.3, -2.8), { 150, 170, 190 }, MAT.SmoothPlastic, { 0, 90, 0 })
 	door.Name = "StallDoor"
 	c:box(V(1.4, 1.4, 1.6), V(0, 0.7, 0.6), WHITE, MAT.SmoothPlastic)
 end

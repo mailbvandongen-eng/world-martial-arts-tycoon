@@ -769,6 +769,19 @@ handlers.submitKumite = function(player, d, p)
 	return ok(res)
 end
 
+-- Leave a running kumite: counts as a loss, frees the mat and the player.
+handlers.quitKumite = function(player, d)
+	local rt = PlayerService.runtime(player)
+	if not rt.kumite then
+		return fail("No kumite running")
+	end
+	rt.kumite = nil
+	d.compete.kumiteLosses = (d.compete.kumiteLosses or 0) + 1
+	d.compete.streak = 0
+	CompetitionService.finishKumite(player, { score = { 0, 0 }, winner = 2, method = "Forfeit" })
+	return ok()
+end
+
 handlers.startChallenge = function(player, d, p)
 	local gameId = Validate.oneOf(p.game, ActivityConfig.games)
 	if not gameId then

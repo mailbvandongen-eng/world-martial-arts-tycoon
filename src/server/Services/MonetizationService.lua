@@ -55,7 +55,7 @@ local function ownsPass(player, pass)
 end
 
 local function applyPass(player, pass, announce)
-	local d = DataService.get(player)
+	local d = DataService.realData(player)
 	if not d then
 		return
 	end
@@ -82,7 +82,7 @@ function MonetizationService.verifyPasses(player)
 			applyPass(player, pass, false)
 		end
 	end
-	local d = DataService.get(player)
+	local d = DataService.realData(player)
 	if d and not RunService:IsStudio() then
 		for key in pairs(d.purchases.passes) do
 			if not verified[key] then
@@ -98,7 +98,8 @@ local function processReceipt(receiptInfo)
 	if not player then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
-	local d = DataService.get(player)
+	-- the real save, also when a developer is testing in the sandbox
+	local d = DataService.realData(player)
 	if not d then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
