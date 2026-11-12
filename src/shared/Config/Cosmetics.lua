@@ -10,22 +10,26 @@
 local Cosmetics = {}
 
 Cosmetics.list = {
-	-- Outfits
-	{ id = "outfit_karate_white", name = "Karate Gi", kind = "outfit", source = "default", shirt = "karate_gi_white_belt_shirt", pants = "karate_gi_pants", style = { top = "gi", color = { 245, 245, 240 }, belt = { 245, 245, 240 } } },
-	{ id = "outfit_karate_red", name = "Kata Champion Gi", kind = "outfit", source = "event", shirt = "karate_gi_red_belt_shirt", pants = "karate_gi_pants", style = { top = "gi", color = { 245, 245, 240 }, belt = { 190, 30, 35 } } },
-	{ id = "outfit_karate_black", name = "Black Belt Gi", kind = "outfit", source = "gems", price = 250, shirt = "karate_gi_black_belt_shirt", pants = "karate_gi_pants", style = { top = "gi", color = { 245, 245, 240 }, belt = { 25, 25, 28 } } },
-	{ id = "outfit_boxing_red", name = "Boxing Champ Kit", kind = "outfit", source = "gems", price = 200, pants = "boxing_shorts_red", style = { top = "none", shorts = { 190, 30, 35 }, gloves = { 190, 30, 35 } } },
-	{ id = "outfit_boxing_gold", name = "Golden Boxing Kit", kind = "outfit", source = "event", pants = "boxing_shorts_gold", style = { top = "none", shorts = { 212, 175, 55 }, gloves = { 212, 175, 55 } } },
-	{ id = "outfit_muaythai_red", name = "Muay Thai Shorts", kind = "outfit", source = "gems", price = 200, pants = "muaythai_shorts_red", style = { top = "none", shorts = { 220, 40, 60 }, armbands = true } },
-	{ id = "outfit_muaythai_gold", name = "Golden Muay Thai Kit", kind = "outfit", source = "event", pants = "muaythai_shorts_gold", style = { top = "none", shorts = { 212, 175, 55 }, armbands = true } },
-	{ id = "outfit_sumo", name = "Mawashi", kind = "outfit", source = "gems", price = 300, pants = "mawashi_navy", style = { top = "none", mawashi = { 40, 50, 80 } } },
-	{ id = "outfit_sumo_gold", name = "Golden Mawashi", kind = "outfit", source = "event", pants = "mawashi_gold", style = { top = "none", mawashi = { 212, 175, 55 } } },
-	{ id = "outfit_judo_blue", name = "Black Belt Judogi", kind = "outfit", source = "gems", price = 220, shirt = "judogi_black_belt_shirt", pants = "karate_gi_pants", style = { top = "gi", color = { 245, 245, 240 }, belt = { 25, 25, 28 } } },
-	{ id = "outfit_bjj_black", name = "BJJ Black Belt Gi", kind = "outfit", source = "pass", pass = "bundle_grappler", shirt = "bjj_gi_black_belt_shirt", pants = "karate_gi_pants", style = { top = "gi", color = { 245, 245, 240 }, belt = { 25, 25, 28 }, patches = true } },
-	{ id = "outfit_tkd", name = "Taekwondo Dobok", kind = "outfit", source = "gems", price = 220, shirt = "dobok_black_belt_shirt", pants = "karate_gi_pants", style = { top = "dobok", color = { 245, 245, 240 }, belt = { 25, 25, 28 } } },
-	{ id = "outfit_mma", name = "MMA Fight Gear", kind = "outfit", source = "pass", pass = "bundle_striker", shirt = "mma_rashguard", pants = "mma_shorts", style = { top = "rashguard", color = { 25, 25, 28 }, shorts = { 230, 30, 30 }, gloves = { 25, 25, 28 } } },
-	{ id = "outfit_owner_gold", name = "Premium Owner Suit", kind = "outfit", source = "pass", pass = "vip_owner", shirt = "owner_suit_shirt", pants = "owner_suit_pants", style = { top = "suit", color = { 30, 28, 26 }, trim = { 212, 175, 55 } } },
+	-- Outfits. Discipline outfits are free once the discipline is unlocked and
+	-- show your mastery rank: rankShirt/rankPants pick "<prefix>_r<rank>",
+	-- champPants switches to the championship-belt shorts from champRank on.
+	{ id = "outfit_karate_white", name = "Karate Gi", kind = "outfit", source = "default", discipline = "karate", rankShirt = "karate", pants = "karate_gi_pants", style = { top = "gi", color = { 245, 245, 240 }, belt = { 245, 245, 240 } } },
+	{ id = "outfit_karate_red", name = "Kata Champion Gi", kind = "outfit", source = "event", discipline = "karate", rankShirt = "karate_red", pants = "karate_gi_pants", style = { top = "gi", color = { 245, 245, 240 }, belt = { 245, 245, 240 } } },
+	{ id = "outfit_judo", name = "Judogi", kind = "outfit", source = "discipline", discipline = "judo", rankShirt = "judo", pants = "karate_gi_pants", style = { top = "gi", color = { 245, 245, 240 }, belt = { 245, 245, 240 } } },
+	{ id = "outfit_tkd", name = "Taekwondo Dobok", kind = "outfit", source = "discipline", discipline = "taekwondo", rankShirt = "tkd", pants = "karate_gi_pants", style = { top = "dobok", color = { 245, 245, 240 }, belt = { 245, 245, 240 } } },
+	{ id = "outfit_bjj", name = "BJJ Gi", kind = "outfit", source = "discipline", discipline = "bjj", rankShirt = "bjj", pants = "karate_gi_pants", style = { top = "gi", color = { 245, 245, 240 }, belt = { 245, 245, 240 }, patches = true } },
+	{ id = "outfit_bjj_black", name = "Black BJJ Gi", kind = "outfit", source = "pass", pass = "bundle_grappler", discipline = "bjj", rankShirt = "bjj_black", pants = "kungfu_pants", style = { top = "gi", color = { 25, 25, 28 }, belt = { 245, 245, 240 }, patches = true } },
+	{ id = "outfit_kungfu_black", name = "Kung Fu Uniform", kind = "outfit", source = "discipline", discipline = "kungfu", rankShirt = "kungfu", pants = "kungfu_pants", style = { top = "kungfu", color = { 25, 25, 28 }, trim = { 240, 240, 240 } } },
 	{ id = "outfit_kungfu", name = "Silk Kung Fu Suit", kind = "outfit", source = "pass", pass = "bundle_traditional", shirt = "kungfu_shirt", pants = "kungfu_pants", style = { top = "kungfu", color = { 180, 30, 30 }, trim = { 212, 175, 55 } } },
+	{ id = "outfit_muaythai_red", name = "Muay Thai Kit", kind = "outfit", source = "discipline", discipline = "muaythai", rankShirt = "muaythai", pants = "muaythai_shorts_red", style = { top = "none", shorts = { 220, 40, 60 }, armbands = true } },
+	{ id = "outfit_muaythai_gold", name = "Golden Muay Thai Kit", kind = "outfit", source = "event", discipline = "muaythai", rankShirt = "muaythai", pants = "muaythai_shorts_gold", style = { top = "none", shorts = { 212, 175, 55 }, armbands = true } },
+	{ id = "outfit_sumo", name = "Mawashi", kind = "outfit", source = "discipline", discipline = "sumo", rankPants = "sumo", style = { top = "none", mawashi = { 40, 50, 80 } } },
+	{ id = "outfit_sumo_gold", name = "Golden Mawashi", kind = "outfit", source = "event", pants = "mawashi_gold", style = { top = "none", mawashi = { 212, 175, 55 } } },
+	{ id = "outfit_boxing_red", name = "Boxing Kit", kind = "outfit", source = "discipline", discipline = "boxing", champPants = "boxing_shorts_red", champRank = 6, style = { top = "none", shorts = { 190, 30, 35 }, gloves = { 190, 30, 35 } } },
+	{ id = "outfit_boxing_gold", name = "Golden Boxing Kit", kind = "outfit", source = "event", pants = "boxing_shorts_gold", style = { top = "none", shorts = { 212, 175, 55 }, gloves = { 212, 175, 55 } } },
+	{ id = "outfit_kickboxing", name = "Kickboxing Kit", kind = "outfit", source = "discipline", discipline = "kickboxing", champPants = "kickboxing_shorts", champRank = 5, style = { top = "none", shorts = { 25, 25, 28 } } },
+	{ id = "outfit_mma", name = "MMA Fight Gear", kind = "outfit", source = "pass", pass = "bundle_striker", discipline = "mma", shirt = "mma_rashguard", champPants = "mma_shorts", champRank = 5, style = { top = "rashguard", color = { 25, 25, 28 }, shorts = { 230, 30, 30 }, gloves = { 25, 25, 28 } } },
+	{ id = "outfit_owner_gold", name = "Premium Owner Suit", kind = "outfit", source = "pass", pass = "vip_owner", shirt = "owner_suit_shirt", pants = "owner_suit_pants", style = { top = "suit", color = { 30, 28, 26 }, trim = { 212, 175, 55 } } },
 	-- Auras
 	{ id = "aura_golden_dragon", name = "Golden Dragon Aura", kind = "aura", source = "daily", style = { color = { 255, 200, 60 }, rate = 14 } },
 	{ id = "aura_festival", name = "Festival Aura", kind = "aura", source = "event", style = { color = { 255, 120, 200 }, rate = 12 } },

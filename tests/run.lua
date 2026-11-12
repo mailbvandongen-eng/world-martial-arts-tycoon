@@ -798,6 +798,40 @@ suite("appearance: every discipline looks like its martial art", function()
 	check(Appearance.describe({ seed = 3, discipline = "boxing", category = "celebrity" }).aura ~= nil, "celebrity glow")
 end)
 
+suite("outfits: rank outfits have clothing for every rank", function()
+	local Clothing = H.load("ReplicatedStorage/Shared/Config/Clothing")
+	for _, c in ipairs(Cosmetics.list) do
+		if c.kind == "outfit" then
+			local disc = c.discipline and Disciplines.byId[c.discipline]
+			local n = disc and #disc.ranks or 1
+			for rank = 1, n do
+				if c.rankShirt then
+					check(Clothing[Clothing.rankName(c.rankShirt, rank)] ~= nil, c.id .. " shirt for rank " .. rank)
+				end
+				if c.rankPants then
+					check(Clothing[Clothing.rankName(c.rankPants, rank)] ~= nil, c.id .. " pants for rank " .. rank)
+				end
+			end
+			if c.champPants then
+				check(Clothing[c.champPants] ~= nil and Clothing[c.champPants .. "_champ"] ~= nil, c.id .. " champion shorts")
+			end
+			for _, k in ipairs({ "shirt", "pants" }) do
+				if c[k] then
+					check(Clothing[c[k]] ~= nil, c.id .. " " .. k .. " template exists")
+				end
+			end
+			if c.source == "discipline" then
+				check(disc ~= nil, c.id .. " has a discipline")
+			end
+		end
+	end
+	-- unlocking a discipline makes its uniform available
+	local d = Schema.validate(Schema.defaults())
+	d.disciplines.judo = true
+	Progress.syncCosmetics(d)
+	check(d.cosmetics.owned.outfit_judo, "judogi owned after unlocking judo")
+end)
+
 suite("poses: sampling and blending", function()
 	local m = Poses.moves.karate_punch
 	local p0 = Poses.sample(m, 0)

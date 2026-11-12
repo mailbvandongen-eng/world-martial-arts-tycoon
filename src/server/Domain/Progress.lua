@@ -198,6 +198,8 @@ function Progress.cosmeticAvailable(d, c)
 		return d.rebirths >= c.rebirths
 	elseif c.source == "pass" then
 		return Economy.hasPass(d, c.pass)
+	elseif c.source == "discipline" then
+		return d.disciplines[c.discipline] == true
 	end
 	return false
 end

@@ -224,6 +224,10 @@ handlers.unlockDiscipline = function(player, d, p)
 	end
 	PlayerService.giveXp(player, Progression.xp.disciplineUnlocked)
 	PlayerService.notify(player, "unlock", { text = Disciplines.byId[id].name .. " unlocked!" })
+	-- the discipline's uniform becomes available in the inventory
+	for _, cid in ipairs(Progress.syncCosmetics(d)) do
+		PlayerService.notify(player, "cosmetic", { id = cid })
+	end
 	return ok(res)
 end
 

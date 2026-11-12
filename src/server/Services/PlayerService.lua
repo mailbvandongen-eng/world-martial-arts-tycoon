@@ -27,6 +27,7 @@ local TrainerGen = require(Domain.TrainerGen)
 
 local DataService = require(script.Parent.DataService)
 local PlotService = require(script.Parent.PlotService)
+local CosmeticService = require(script.Parent.CosmeticService)
 
 local PlayerService = {}
 
@@ -456,6 +457,7 @@ local function handleSettlement(player, d, rt, res, ctx)
 	for _, rank in ipairs(res.rankUps) do
 		local disc = Disciplines.byId[plan.interest]
 		PlayerService.notify(player, "rankup", { discipline = plan.interest, rank = rank, name = disc.ranks[rank].name })
+		task.spawn(CosmeticService.rankUp, player, plan.interest)
 		local index = PlotService.plotOf(player)
 		if index then
 			visitorsRemote:FireAllClients("rankup", index, { slot = plan.slot, discipline = plan.interest, rank = rank })

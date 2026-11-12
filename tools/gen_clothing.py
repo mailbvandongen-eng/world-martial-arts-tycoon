@@ -85,8 +85,12 @@ def gi_shirt(base, lapel, belt, sleeves="long", collar=None):
     if belt:
         belt_on_torso(d, belt[0], 0.82, 12)
         if len(belt) > 1 and belt[1]:
+            # rank bars (dan stripes / BJJ black-belt bar) on the belt ends
             fx, fy, fw, fh = TORSO["front"]
-            d.rectangle([fx + fw // 2 + 30, fy + int(fh * 0.82), fx + fw // 2 + 40, fy + int(fh * 0.82) + 12], fill=belt[1])
+            by = fy + int(fh * 0.82)
+            for i in range(belt[2] if len(belt) > 2 else 1):
+                d.rectangle([fx + fw // 2 + 26 + i * 8, by + 1, fx + fw // 2 + 31 + i * 8, by + 11], fill=belt[1])
+            d.polygon([(fx + fw // 2 + 2, by + 12), (fx + fw // 2 + 8, by + 12), (fx + fw // 2 + 17, by + 44), (fx + fw // 2 + 10, by + 46)], fill=belt[1])
     return img
 
 
@@ -212,7 +216,108 @@ ITEMS = {
 }
 
 
+def sash_shirt(base, trim, sash):
+    """Kung fu uniform: frog buttons + a sash knotted at the side."""
+    img = kungfu_shirt(base, trim)
+    d = ImageDraw.Draw(img)
+    for name in ("front", "back", "left", "right"):
+        x, y, w, h = TORSO[name]
+        by = y + int(h * 0.8)
+        d.rectangle([x, by, x + w - 1, by + 16], fill=sash, outline=shade(sash, 0.7))
+    x, y, w, h = TORSO["left"]
+    by = y + int(h * 0.8)
+    d.polygon([(x + 18, by + 16), (x + 30, by + 16), (x + 34, by + 60), (x + 14, by + 60)], fill=sash, outline=shade(sash, 0.7))
+    return img
+
+
+def prajiad_shirt(color):
+    """Muay Thai: bare chest, only the armbands (transparent elsewhere)."""
+    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    for limb in (RLIMB, LLIMB):
+        for key in ("front", "a", "b", "c"):
+            lx, ly, lw, lh = limb[key]
+            d.rectangle([lx, ly + 18, lx + lw - 1, ly + 34], fill=color, outline=shade(color, 0.6))
+            # twisted cord look
+            for i in range(0, lw, 8):
+                d.line([(lx + i, ly + 18), (lx + i + 6, ly + 34)], fill=shade(color, 0.75), width=2)
+    return img
+
+
+def sumo_rank(rank, total):
+    if rank == total:  # yokozuna: purple silk mawashi + white rope with paper zigzags
+        img = mawashi((90, 40, 120))
+        d = ImageDraw.Draw(img)
+        for name in ("front", "back", "left", "right"):
+            x, y, w, h = TORSO[name]
+            d.rectangle([x, y + 4, x + w - 1, y + 22], fill=(245, 245, 240), outline=(200, 200, 190))
+            for i in range(0, w, 12):
+                d.line([(x + i, y + 4), (x + i + 10, y + 22)], fill=(205, 205, 195), width=2)
+        x, y, w, h = TORSO["front"]
+        for cx in (x + 30, x + 64, x + 98):
+            d.polygon([(cx - 6, y + 22), (cx + 6, y + 22), (cx - 2, y + 34), (cx + 8, y + 34), (cx - 4, y + 48), (cx - 8, y + 36)], fill=(250, 250, 250))
+        return img
+    colors = [(30, 30, 35), (35, 40, 60), (40, 45, 70), (45, 50, 80), (110, 50, 150), (35, 85, 185), (212, 175, 55)]
+    return mawashi(colors[min(rank, len(colors)) - 1])
+
+
+def champion_belt(img):
+    """Adds a gold championship belt around the waist of a pants template."""
+    d = ImageDraw.Draw(img)
+    for name in ("front", "back", "left", "right"):
+        x, y, w, h = TORSO[name]
+        d.rectangle([x, y + 2, x + w - 1, y + 26], fill=(150, 30, 30), outline=(90, 20, 20))
+    x, y, w, h = TORSO["front"]
+    d.ellipse([x + w // 2 - 26, y - 2, x + w // 2 + 26, y + 32], fill=GOLD, outline=(150, 120, 30), width=3)
+    d.ellipse([x + w // 2 - 12, y + 6, x + w // 2 + 12, y + 24], fill=(240, 220, 120))
+    return img
+
+
+def rank_items():
+    """Rank-based outfits: one template per rank so the belt shows progress."""
+    import json
+    ranks = json.load(open(os.path.join(os.path.dirname(OUT), "..", "build", "ranks.json")))
+    items = {}
+
+    def belt_spec(r):
+        stripe = tuple(r["stripe"]) if r["stripe"] else None
+        return (tuple(r["color"]), stripe, 1)
+
+    for i, r in enumerate(ranks["karate"], 1):
+        spec = belt_spec(r)
+        if spec[1]:
+            spec = (spec[0], spec[1], i - 6)  # 2nd dan = 2 bars, 3rd dan = 3 bars
+        items[f"karate_r{i}"] = (lambda spec=spec: gi_shirt(WHITE, None, list(spec)))
+        items[f"karate_red_r{i}"] = (lambda spec=spec: gi_shirt(WHITE, None, list(spec), collar=RED))
+    for i, r in enumerate(ranks["judo"], 1):
+        spec = belt_spec(r)
+        if r["name"].startswith("Red-White"):
+            spec = ((190, 30, 35), (245, 245, 240), 6)
+        items[f"judo_r{i}"] = (lambda spec=spec: gi_shirt(WHITE, None, list(spec), collar=(225, 225, 218)))
+    for i, r in enumerate(ranks["taekwondo"], 1):
+        spec = belt_spec(r)
+        collar = BLACK if r["name"].startswith("Black") else (230, 230, 225)
+        items[f"tkd_r{i}"] = (lambda spec=spec, collar=collar: gi_shirt(WHITE, None, list(spec), collar=collar))
+    for i, r in enumerate(ranks["bjj"], 1):
+        spec = belt_spec(r)
+        items[f"bjj_r{i}"] = (lambda spec=spec: gi_shirt(WHITE, None, list(spec)))
+        items[f"bjj_black_r{i}"] = (lambda spec=spec: gi_shirt(BLACK, None, list(spec), collar=(45, 45, 50)))
+    for i, r in enumerate(ranks["kungfu"], 1):
+        items[f"kungfu_r{i}"] = (lambda c=tuple(r["color"]): sash_shirt(BLACK, (240, 240, 240), c))
+    for i, r in enumerate(ranks["muaythai"], 1):
+        items[f"muaythai_r{i}"] = (lambda c=tuple(r["color"]): prajiad_shirt(c))
+    total = len(ranks["sumo"])
+    for i in range(1, total + 1):
+        items[f"sumo_r{i}"] = (lambda i=i: sumo_rank(i, total))
+    items["boxing_shorts_red_champ"] = lambda: champion_belt(shorts(RED, (240, 240, 240)))
+    items["kickboxing_shorts_champ"] = lambda: champion_belt(shorts(BLACK, (230, 120, 20)))
+    items["kickboxing_shorts"] = lambda: shorts(BLACK, (230, 120, 20))
+    items["mma_shorts_champ"] = lambda: champion_belt(shorts((230, 30, 30), BLACK, None, 0.55))
+    return items
+
+
 def main():
+    ITEMS.update(rank_items())
     os.makedirs(OUT, exist_ok=True)
     for name, fn in ITEMS.items():
         fn().save(os.path.join(OUT, name + ".png"))

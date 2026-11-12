@@ -10,6 +10,7 @@ local Remotes = require(Shared.Modules.Remotes)
 local Cosmetics = require(Shared.Config.Cosmetics)
 local Cities = require(Shared.Config.Cities)
 local Clothing = require(Shared.Config.Clothing)
+local Disciplines = require(Shared.Config.Disciplines)
 
 local DataService = require(script.Parent.DataService)
 
@@ -215,7 +216,14 @@ local function applyTitle(folder, character, player, d)
 	local t2 = t1:Clone()
 	t2.Position = UDim2.new(0, 0, 0.5, 0)
 	local city = Cities.byId[d.activeCity]
-	t2.Text = "Lv " .. d.level .. (d.flags.prestigeTitle and ("  •  " .. d.flags.prestigeTitle) or "") .. "  •  " .. (city and city.name or "")
+	local outfit = d.cosmetics.equipped.outfit and Cosmetics.byId[d.cosmetics.equipped.outfit]
+	local disc = outfit and outfit.discipline and Disciplines.byId[outfit.discipline]
+	if disc then
+		local m = d.mastery[disc.id]
+		t2.Text = disc.name .. "  •  " .. disc.ranks[m and m.rank or 1].name .. "  •  Lv " .. d.level
+	else
+		t2.Text = "Lv " .. d.level .. (d.flags.prestigeTitle and ("  •  " .. d.flags.prestigeTitle) or "") .. "  •  " .. (city and city.name or "")
+	end
 	t2.TextColor3 = Color3.fromRGB(200, 200, 210)
 	t2.Font = Enum.Font.GothamBold
 	t2.Parent = bb
@@ -286,10 +294,28 @@ local function restoreClothing(player, character)
 	end
 end
 
+-- Which clothing an outfit uses right now: rank outfits follow the player's
+-- mastery rank in the outfit's discipline (belt colour, sash, mawashi, title belt).
+function CosmeticService.clothingFor(d, outfit)
+	local m = outfit.discipline and d.mastery[outfit.discipline]
+	local rank = m and m.rank or 1
+	local shirt, pants = outfit.shirt, outfit.pants
+	if outfit.rankShirt then
+		shirt = Clothing.rankName(outfit.rankShirt, rank)
+	end
+	if outfit.rankPants then
+		pants = Clothing.rankName(outfit.rankPants, rank)
+	end
+	if outfit.champPants then
+		pants = rank >= outfit.champRank and (outfit.champPants .. "_champ") or outfit.champPants
+	end
+	return shirt, pants, rank
+end
+
 -- Dress the avatar in classic Shirt/Pants; their own clothes are stored.
-local function applyClothing(player, character, style)
-	local shirtTex = textureFor(style.shirt)
-	local pantsTex = textureFor(style.pants)
+local function applyClothing(player, character, shirtName, pantsName)
+	local shirtTex = textureFor(shirtName)
+	local pantsTex = textureFor(pantsName)
 	if not shirtTex and not pantsTex then
 		return false
 	end
@@ -339,7 +365,8 @@ function CosmeticService.apply(player)
 	restoreClothing(player, character)
 	if outfit then
 		-- real clothing when uploaded, simple overlay parts as a fallback
-		local dressed = applyClothing(player, character, outfit)
+		local shirtName, pantsName = CosmeticService.clothingFor(d, outfit)
+		local dressed = applyClothing(player, character, shirtName, pantsName)
 		if not dressed and outfit.style then
 			applyOutfit(folder, character, outfit.style)
 		end
@@ -357,6 +384,18 @@ local function onCharacter(player, character)
 	character:WaitForChild("Head", 10)
 	task.wait(0.5) -- let the avatar finish loading its parts
 	CosmeticService.apply(player)
+end
+
+-- Rank-up ceremony: new belt/sash on the avatar and a bow everyone sees.
+function CosmeticService.rankUp(player, disciplineId)
+	local d = DataService.get(player)
+	local outfit = d and d.cosmetics.equipped.outfit and Cosmetics.byId[d.cosmetics.equipped.outfit]
+	if outfit and outfit.discipline == disciplineId then
+		CosmeticService.apply(player)
+		if emoteRemote then
+			emoteRemote:FireAllClients(player.UserId, "emote_bow")
+		end
+	end
 end
 
 function CosmeticService.init()

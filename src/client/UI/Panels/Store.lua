@@ -118,7 +118,7 @@ local function cosmeticCard(parent, c, d, ui, order)
 	Kit.corner(card, 12)
 	Kit.label(card, string.upper(c.kind), { Position = UDim2.fromOffset(12, 8), Size = UDim2.new(1, -24, 0, 16), TextSize = 11, TextColor3 = C.gold, Font = Kit.fontBlack })
 	Kit.label(card, c.name, { Position = UDim2.fromOffset(12, 24), Size = UDim2.new(1, -24, 0, 26), TextSize = 18, Font = Kit.fontBlack })
-	local how = c.source == "gems" and ("◆ " .. c.price) or c.source == "cash" and Format.cash(c.price) or c.source == "event" and "Event reward" or c.source == "pass" and ("Included in " .. (Monetization.passByKey[c.pass] and Monetization.passByKey[c.pass].name or "a pass")) or c.source == "level" and ("Reach level " .. c.level) or c.source == "rebirth" and ("Rebirth " .. c.rebirths .. "x") or c.source == "daily" and "Daily reward (day 7)" or "Free"
+	local how = c.source == "gems" and ("◆ " .. c.price) or c.source == "cash" and Format.cash(c.price) or c.source == "event" and "Event reward" or c.source == "pass" and ("Included in " .. (Monetization.passByKey[c.pass] and Monetization.passByKey[c.pass].name or "a pass")) or c.source == "level" and ("Reach level " .. c.level) or c.source == "rebirth" and ("Rebirth " .. c.rebirths .. "x") or c.source == "daily" and "Daily reward (day 7)" or c.source == "discipline" and "Free with the discipline; shows your rank" or "Free"
 	Kit.label(card, "Cosmetic only. " .. how, { Position = UDim2.fromOffset(12, 52), Size = UDim2.new(1, -24, 0, 40), TextSize = 13, Font = Kit.fontBody, TextColor3 = C.muted })
 	local canBuy = (c.source == "gems" or c.source == "cash") and not owned
 	local afford = c.source == "gems" and d.gems >= (c.price or 0) or c.source == "cash" and d.cash >= (c.price or 0)
