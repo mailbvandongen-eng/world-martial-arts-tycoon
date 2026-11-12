@@ -273,12 +273,26 @@ local function hiddenFolder(player)
 	return f
 end
 
+-- Layered clothing that would show over the gi. Only real clothing types:
+-- dynamic heads also use layered accessories (face, eyebrows, eyelashes) and
+-- hair, and hiding those leaves the avatar without a face.
+local CLOTHING_TYPES = {
+	Shirt = true, TShirt = true, Sweater = true, Jacket = true, Pants = true, Shorts = true,
+	DressSkirt = true, LeftShoe = true, RightShoe = true,
+}
+
 local function isLayered(item)
 	if not item:IsA("Accessory") then
 		return false
 	end
 	local handle = item:FindFirstChild("Handle")
-	return handle ~= nil and handle:FindFirstChildOfClass("WrapLayer") ~= nil
+	if not handle or not handle:FindFirstChildOfClass("WrapLayer") then
+		return false
+	end
+	local ok, accType = pcall(function()
+		return item.AccessoryType.Name
+	end)
+	return ok and CLOTHING_TYPES[accType] == true
 end
 
 -- Put the avatar's own clothing back (after taking an outfit off).

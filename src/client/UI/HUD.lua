@@ -64,7 +64,7 @@ function HUD.build(ui)
 	end
 
 	-- top bar
-	local top = Kit.frame(layer, { BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 8), Size = UDim2.fromOffset(980, 44) })
+	local top = Kit.frame(layer, { BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 8), Size = UDim2.fromOffset(1080, 44) })
 	local tl = Kit.list(top, 8, true)
 	tl.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	local _, cash = stat(top, 1, "$", C.cash, 170)
@@ -104,7 +104,7 @@ function HUD.build(ui)
 	refs.missionBadge, refs.dailyBadge, refs.objText = missionBadge, dailyBadge, objText
 
 	-- right column: main navigation
-	local right = Kit.frame(layer, { BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -10, touch and 0.4 or 0.45, 0), Size = UDim2.fromOffset(84, 540) })
+	local right = Kit.frame(layer, { BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -10, 0, 62), Size = UDim2.fromOffset(84, 540) })
 	Kit.list(right, 8)
 	local nav = {
 		{ "🔨", "Build", function()
@@ -160,9 +160,10 @@ function HUD.build(ui)
 	refs.collect, refs.regFill, refs.hourly, refs.train = collect, regFill, hourly, train
 
 	-- developer button (only for developers; the server checks every action)
-	local devBtn = Kit.button(layer, "🛠 DEV", function()
+	-- sits first in the top bar, so it never overlaps the Roblox menu buttons
+	local devBtn = Kit.button(top, "🛠 DEV", function()
 		ui.open("dev")
-	end, { AnchorPoint = Vector2.new(0, 0), Position = UDim2.fromOffset(10, 8), Size = UDim2.fromOffset(84, 40), TextSize = 14, Font = Kit.fontBlack, Visible = false }, "bad")
+	end, { Size = UDim2.fromOffset(84, 44), LayoutOrder = 0, TextSize = 14, Font = Kit.fontBlack, Visible = false }, "bad")
 	refs.devBtn = devBtn
 
 	State.Changed:Connect(HUD.refresh)

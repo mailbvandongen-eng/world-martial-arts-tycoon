@@ -29,7 +29,11 @@ local function updateScale()
 	if not cam or not scale then
 		return
 	end
+	-- the area we may draw in (screen minus the Roblox menu bar and notches)
 	local v = cam.ViewportSize
+	if gui and gui.AbsoluteSize.X > 0 then
+		v = gui.AbsoluteSize
+	end
 	local s = math.min(v.X / 1280, v.Y / 760)
 	if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
 		s = s * 1.15 -- bigger touch targets on phones/tablets
@@ -226,8 +230,9 @@ function UI.init()
 	gui.IgnoreGuiInset = false
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	pcall(function()
-		-- keep the HUD out of notches and rounded corners
-		gui.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
+		-- keep the HUD out of notches, rounded corners and the Roblox menu
+		-- buttons at the top (DeviceSafeInsets would put us under them)
+		gui.ScreenInsets = Enum.ScreenInsets.CoreUISafeInsets
 	end)
 	gui.Parent = player:WaitForChild("PlayerGui")
 	-- root is centred and sized 1/scale; its UIScale shrinks it back to exactly the screen
@@ -248,6 +253,7 @@ function UI.init()
 	end
 	resize()
 	workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(resize)
+	gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(resize)
 
 	State.onError = function(msg)
 		UI.toast(msg, "error")
