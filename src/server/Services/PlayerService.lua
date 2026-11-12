@@ -312,6 +312,14 @@ local function onPlayerAdded(player)
 	grantOffline(player, d, ctx)
 	Progress.refreshQuests(d, os.time(), player.UserId)
 	Progress.syncCosmetics(d)
+	-- everyone starts in a karate gi once; unequipping later is respected
+	if not d.flags.defaultOutfitGiven then
+		d.flags.defaultOutfitGiven = true
+		d.cosmetics.owned.outfit_karate_white = true
+		if not d.cosmetics.equipped.outfit then
+			d.cosmetics.equipped.outfit = "outfit_karate_white"
+		end
+	end
 	setupLeaderstats(player, d)
 	PlotService.sendAll(player)
 	pushState(player)

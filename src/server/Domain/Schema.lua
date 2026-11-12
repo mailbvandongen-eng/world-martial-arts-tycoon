@@ -50,7 +50,7 @@ function Schema.defaults()
 		boosts = {},
 		cosmetics = {
 			owned = { outfit_karate_white = true, pose_bow = true, title_owner = true },
-			equipped = { title = "title_owner" },
+			equipped = { title = "title_owner", outfit = "outfit_karate_white" },
 		},
 		quests = { day = -1, daily = {}, week = -1, weekly = {} },
 		daily = { lastDay = -1, streak = 0 },
