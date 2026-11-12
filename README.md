@@ -5,6 +5,12 @@ martial arts empire across 10 cities, 12 disciplines and 24 room types.
 
 ![Academy in Tokyo](docs/images/academy_tokyo.png)
 
+![Training rooms](docs/images/training_rooms.png)
+
+Latest update: [Academy overhaul & gameplay expansion](docs/UPDATE_ACADEMY_OVERHAUL.md) — bigger academy with a
+central hall, rooms that grow per level, training stations where students really use the equipment,
+new HUD, training challenges, tournaments, student profiles and achievements.
+
 The images in this README come from the game's own code (the real `Appearance`,
 `Rig`, `Poses`, `PlotBuilder`, `RoomBuilder` and `Props` modules run under Lua 5.4 with a
 small Roblox-maths stub, then drawn with a simple renderer). They are **not**
@@ -41,7 +47,8 @@ Then follow [docs/SETUP.md](docs/SETUP.md) (API access, lighting, max players, a
 | Progression | Levels 1–100, discipline mastery, rebirth (prestige), daily/weekly missions, 7-day login rewards, 6 seasonal events with exclusive rewards, objective guide |
 | Monetisation | 18 Game Passes (core, premium equipment, bundles), 7 Developer Products; secure ProcessReceipt with receipt idempotency |
 | Social | Shared server with 8 plots, visiting, inspecting and rating academies, global + server leaderboards, server-wide announcements |
-| UI | Dark/gold HUD + 15 panels, responsive for PC, tablet, phone; gamepad support |
+| Active play | 5 training challenges (mini-games), scheduled tournaments with an arena, student profiles with belts and graduations, 16 achievements |
+| UI | Dark/gold mobile-first HUD + 19 panels with one window framework (fixed close button), responsive, gamepad and keyboard shortcuts |
 
 ![All disciplines](docs/images/disciplines.png)
 
@@ -68,7 +75,7 @@ docs/                  architecture, setup, monetisation, testing, status
 ## Checks
 
 ```sh
-sh tools/test.sh       # static checks + 4600 test assertions + place build
+sh tools/test.sh       # static checks + 53,000 test assertions + place build
 ```
 
 Documentation: [Architecture](docs/ARCHITECTURE.md) · [Setup & publishing](docs/SETUP.md) ·

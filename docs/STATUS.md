@@ -1,5 +1,7 @@
 # Implementation status
 
+See also the latest update: [UPDATE_ACADEMY_OVERHAUL.md](UPDATE_ACADEMY_OVERHAUL.md) (place version 16).
+
 Legend: **Implemented** = code written and wired end-to-end, covered by offline checks where
 possible · **Needs Studio test** = implemented, but only verifiable in Roblox · **Asset
 needed** = works, but a Roblox upload/id is required · **Not implemented**.
