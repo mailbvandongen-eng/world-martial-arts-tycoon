@@ -147,8 +147,10 @@ end
 
 -- Studio-only test grant (lets you test the store and its effects before the
 -- real ids exist). Never active on live servers.
-function MonetizationService.devGrant(player, kind, key)
-	if not RunService:IsStudio() then
+function MonetizationService.devGrant(player, kind, key, trustedDev)
+	-- Studio, or a verified developer (ActionService checks). On live servers a
+	-- dev-granted pass is removed again at the next join (verifyPasses).
+	if not RunService:IsStudio() and not trustedDev then
 		return false, "Not available"
 	end
 	local d = DataService.get(player)

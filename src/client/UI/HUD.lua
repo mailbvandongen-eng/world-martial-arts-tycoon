@@ -159,6 +159,12 @@ function HUD.build(ui)
 	end, { Size = UDim2.fromOffset(140, 60), LayoutOrder = 3, TextSize = 18, Font = Kit.fontBlack }, "gold")
 	refs.collect, refs.regFill, refs.hourly, refs.train = collect, regFill, hourly, train
 
+	-- developer button (only for developers; the server checks every action)
+	local devBtn = Kit.button(layer, "🛠 DEV", function()
+		ui.open("dev")
+	end, { AnchorPoint = Vector2.new(0, 0), Position = UDim2.fromOffset(10, 8), Size = UDim2.fromOffset(84, 40), TextSize = 14, Font = Kit.fontBlack, Visible = false }, "bad")
+	refs.devBtn = devBtn
+
 	State.Changed:Connect(HUD.refresh)
 	task.spawn(function()
 		while true do
@@ -203,6 +209,8 @@ function HUD.refresh()
 	if not d then
 		return
 	end
+	refs.devBtn.Visible = x.isDev == true
+	refs.devBtn.Text = x.sandbox and "🛠 DEV •" or "🛠 DEV"
 	refs.cash.Text = Format.cash(d.cash)
 	refs.gems.Text = Format.short(d.gems)
 	refs.rep.Text = Format.short(d.reputation)

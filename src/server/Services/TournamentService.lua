@@ -108,6 +108,28 @@ local function award()
 	end
 end
 
+-- Developer menu: start a tournament right now with a short registration.
+function TournamentService.devStart(tournamentId, registrationSeconds)
+	local def
+	for _, t in ipairs(Config.tournaments) do
+		if t.id == tournamentId then
+			def = t
+		end
+	end
+	if not def then
+		return false, "Unknown tournament"
+	end
+	local now = serverNow()
+	local reg = now + (registrationSeconds or 20)
+	local info = {
+		key = -math.floor(now), id = def.id, name = def.name .. " (test)", discipline = def.discipline,
+		startAt = now, regEnd = reg, rounds = { reg, reg + 12, reg + 24 }, endAt = reg + 30, nextAt = reg + 60,
+	}
+	current = { info = info, entrants = {}, order = {} }
+	remote:FireAllClients("state", snapshot())
+	return true
+end
+
 function TournamentService.init()
 	remote = Remotes.get("Tournament")
 	current = newTournament(serverNow())

@@ -15,6 +15,8 @@ local Cosmetics = require(Shared.Config.Cosmetics)
 local Trainers = require(Shared.Config.Trainers)
 local Progression = require(Shared.Config.Progression)
 local Layout = require(Shared.Modules.Layout)
+local Formulas = require(Shared.Modules.Formulas)
+local Events = require(Shared.Config.Events)
 
 local Domain = script.Parent.Parent.Domain
 local Academy = require(Domain.Academy)
@@ -32,6 +34,7 @@ local MonetizationService = require(script.Parent.MonetizationService)
 local CosmeticService = require(script.Parent.CosmeticService)
 local TournamentService = require(script.Parent.TournamentService)
 local Activities = require(Domain.Activities)
+local DevTools = require(Domain.DevTools)
 local ActivityConfig = require(Shared.Config.Activities)
 
 local ActionService = {}
@@ -681,6 +684,240 @@ handlers.enterTournament = function(player)
 		return fail(res)
 	end
 	return ok(res)
+end
+
+---------------------------------------------------------------- developer menu
+
+-- Every developer operation is checked here on the server. The first change
+-- puts the developer in sandbox mode (real progress set aside, nothing saved).
+local devOps = {}
+
+local function refreshAll(player)
+	PlayerService.resetSimulation(player)
+	PlotService.refreshPlotOf(player)
+	CosmeticService.apply(player)
+end
+
+devOps.sandbox = function(player, d, p)
+	if p.on then
+		DataService.enterSandbox(player)
+	else
+		DataService.exitSandbox(player)
+		refreshAll(player)
+	end
+	return ok({ sandbox = DataService.isSandbox(player) })
+end
+
+devOps.scenario = function(player, d, p)
+	local nd = DevTools.scenario(Validate.string(p.id, 20) or "", math.random(1, 1e6))
+	if not nd then
+		return fail("Unknown scenario")
+	end
+	DataService.replaceData(player, nd)
+	if not PlotService.plotOf(player) then
+		PlotService.claim(player)
+	end
+	refreshAll(player)
+	return ok()
+end
+
+devOps.set = function(player, d, p)
+	local success, err = DevTools.setValue(d, Validate.string(p.key, 20) or "", p.value)
+	return success and ok() or fail(err)
+end
+
+devOps.city = function(player, d, p)
+	local id = Validate.oneOf(p.id, Cities.byId)
+	if not id then
+		return fail("Unknown city")
+	end
+	DevTools.unlockCity(d, id, true)
+	refreshAll(player)
+	local index = PlotService.plotOf(player)
+	if index then
+		PlotService.teleportTo(player, index)
+	end
+	return ok()
+end
+
+devOps.discipline = function(player, d, p)
+	local success, err = DevTools.unlockDiscipline(d, Validate.string(p.id, 20) or "")
+	for _, cid in ipairs(Progress.syncCosmetics(d)) do
+		PlayerService.notify(player, "cosmetic", { id = cid })
+	end
+	return success and ok() or fail(err)
+end
+
+devOps.mastery = function(player, d, p)
+	local rank = Validate.int(p.rank, 1, 99)
+	local success, err = DevTools.setMastery(d, Validate.string(p.id, 20) or "", rank or 1)
+	if success then
+		CosmeticService.apply(player)
+		PlotService.refreshPlotOf(player)
+	end
+	return success and ok() or fail(err)
+end
+
+devOps.room = function(player, d, p)
+	local slot = Validate.int(p.slot, 1, Layout.MAX_SLOTS)
+	local roomId = Validate.oneOf(p.roomId, Rooms.byId)
+	local level = Validate.int(p.level, 1, Rooms.MAX_LEVEL)
+	if not slot or not roomId or not level then
+		return fail("Invalid room")
+	end
+	local success, err = DevTools.placeRoom(d, d.activeCity, slot, roomId, level)
+	if success then
+		PlotService.refreshRoomOf(player, slot)
+	end
+	return success and ok() or fail(err)
+end
+
+devOps.roomLevels = function(player, d, p)
+	DevTools.setAllRoomLevels(d, d.activeCity, Validate.int(p.level, 1, Rooms.MAX_LEVEL) or 1)
+	refreshAll(player)
+	return ok()
+end
+
+devOps.clearRooms = function(player, d)
+	DevTools.clearRooms(d, d.activeCity)
+	refreshAll(player)
+	return ok()
+end
+
+devOps.fillAcademy = function(player, d, p)
+	local rarity = Validate.oneOf(p.rarity, Trainers.rarityById) or "rare"
+	DevTools.fillAcademy(d, PlayerService.runtime(player).rng, Validate.int(p.level, 1, Rooms.MAX_LEVEL) or 3, rarity)
+	refreshAll(player)
+	return ok()
+end
+
+devOps.finishBuild = function(player, d)
+	Academy.instantFinish(d)
+	return ok()
+end
+
+devOps.trainer = function(player, d, p)
+	local disc = Validate.oneOf(p.discipline, Disciplines.byId)
+	local rarity = Validate.oneOf(p.rarity, Trainers.rarityById)
+	if not disc or not rarity then
+		return fail("Pick a discipline and rarity")
+	end
+	d.disciplines[disc] = true
+	local success, uid = DevTools.addTrainer(d, PlayerService.runtime(player).rng, disc, rarity, d.activeCity)
+	refreshAll(player)
+	return success and ok({ uid = uid }) or fail(uid)
+end
+
+devOps.staffAll = function(player, d, p)
+	DevTools.staffAll(d, PlayerService.runtime(player).rng, d.activeCity, Validate.oneOf(p.rarity, Trainers.rarityById) or "rare")
+	refreshAll(player)
+	return ok()
+end
+
+devOps.students = function(player, d, p)
+	local disc = Validate.oneOf(p.discipline, Disciplines.byId)
+	if not disc then
+		return fail("Unknown discipline")
+	end
+	local success, err = DevTools.addStudents(d, PlayerService.runtime(player).rng, disc, Validate.int(p.count, 1, 40) or 5, Validate.int(p.rank, 1, 9) or 1)
+	return success and ok() or fail(err)
+end
+
+devOps.visitors = function(player, d, p)
+	local rt = PlayerService.runtime(player)
+	if p.burst then
+		rt.sim.devBurst = (rt.sim.devBurst or 0) + (Validate.int(p.burst, 1, 40) or 10)
+	end
+	if p.rate then
+		rt.sim.devSpawnMult = Validate.int(p.rate, 1, 20) or 1
+	end
+	return ok()
+end
+
+devOps.missions = function(player, d, p)
+	if p.mode == "complete" then
+		DevTools.completeMissions(d)
+	elseif p.mode == "reroll" then
+		DevTools.rerollMissions(d)
+		Progress.refreshQuests(d, os.time(), player.UserId)
+	elseif p.mode == "resetDaily" then
+		DevTools.resetDaily(d)
+	else
+		return fail("Unknown mode")
+	end
+	return ok()
+end
+
+devOps.tournament = function(player, d, p)
+	local success, err = TournamentService.devStart(Validate.string(p.id, 30) or "", 20)
+	return success and ok() or fail(err)
+end
+
+devOps.championship = function(player, d, p)
+	local disc = Validate.oneOf(p.discipline, Disciplines.byId) or "karate"
+	d.flags.arenaReadyAt = 0
+	d.disciplines[disc] = true
+	local hasArena = false
+	for _, room in pairs(d.cities[d.activeCity].rooms) do
+		if room.id == "arena" then
+			hasArena = true
+			room.buildEnd = nil
+		end
+	end
+	if not hasArena then
+		for slot = 1, Academy.slotCount(d, d.activeCity) do
+			if not d.cities[d.activeCity].rooms[tostring(slot)] then
+				DevTools.placeRoom(d, d.activeCity, slot, "arena", 3)
+				PlotService.refreshRoomOf(player, slot)
+				break
+			end
+		end
+	end
+	d.cash = d.cash + Formulas.rewardCashUnit(d.level) * 3
+	local success, res = PlayerService.startChampionship(player, disc)
+	return success and ok(res) or fail(res)
+end
+
+devOps.event = function(player, d, p)
+	local id = p.id ~= nil and Validate.oneOf(p.id, Events.byId) or nil
+	PlayerService.setEventOverride(id)
+	return ok()
+end
+
+devOps.grant = function(player, d, p)
+	local success, res = MonetizationService.devGrant(player, Validate.string(p.kind, 10) or "", Validate.string(p.key, 40) or "", true)
+	return success and ok(res) or fail(res)
+end
+
+devOps.teleport = function(player, d, p)
+	local character = player.Character
+	if p.to == "arena" and character then
+		character:PivotTo(CFrame.new(-150, 5, 14))
+	elseif p.to == "home" then
+		local index = PlotService.plotOf(player) or select(2, PlotService.claim(player))
+		if type(index) == "number" then
+			PlotService.teleportTo(player, index)
+		end
+	end
+	return ok()
+end
+
+handlers.dev = function(player, d, p)
+	if not PlayerService.isDev(player) then
+		return fail("Developer menu is not available")
+	end
+	local op = Validate.string(p.op, 20)
+	local fn = op and devOps[op]
+	if not fn then
+		return fail("Unknown developer action")
+	end
+	if op ~= "sandbox" and not DataService.isSandbox(player) then
+		DataService.enterSandbox(player)
+	end
+	-- operations work on the (sandboxed) save that is current now
+	local result = fn(player, DataService.get(player), p)
+	PlayerService.markDirty(player)
+	return result
 end
 
 ---------------------------------------------------------------- studio testing

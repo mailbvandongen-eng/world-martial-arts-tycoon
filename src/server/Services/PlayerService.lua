@@ -17,6 +17,9 @@ local Cities = require(Shared.Config.Cities)
 local Customers = require(Shared.Config.Customers)
 local Rooms = require(Shared.Config.Rooms)
 local Monetization = require(Shared.Config.Monetization)
+local Events = require(Shared.Config.Events)
+local DevConfig = require(Shared.Config.Dev)
+local RunService = game:GetService("RunService")
 
 local Domain = script.Parent.Parent.Domain
 local Academy = require(Domain.Academy)
@@ -42,7 +45,15 @@ local function serverNow()
 end
 
 local eventCache = { at = -1 }
+local eventOverride -- developer menu: force an event (config id) for testing
+function PlayerService.setEventOverride(id)
+	eventOverride = id
+	eventCache.at = -1
+end
 local function activeEvent(now)
+	if eventOverride then
+		return Events.byId[eventOverride]
+	end
 	if now - eventCache.at > 60 then
 		eventCache.at = now
 		eventCache.event = Progress.activeEvent(now)
@@ -61,6 +72,14 @@ end
 
 function PlayerService.data(player)
 	return DataService.get(player)
+end
+
+-- Developer access: listed user ids, the experience owner, or Roblox Studio.
+function PlayerService.isDev(player)
+	if RunService:IsStudio() or DevConfig.USER_IDS[player.UserId] then
+		return true
+	end
+	return game.CreatorType == Enum.CreatorType.User and game.CreatorId == player.UserId
 end
 
 function PlayerService.markDirty(player)
@@ -192,6 +211,9 @@ function PlayerService.buildState(player)
 		eventId = event and event.id or nil,
 		masteredCount = Economy.masteredCount(d),
 		passive = {},
+		isDev = PlayerService.isDev(player),
+		sandbox = DataService.isSandbox(player),
+		eventOverride = eventOverride,
 	}
 	local canRebirth, rebirthErr = Progress.canRebirth(d)
 	derived.rebirth = { can = canRebirth, reason = rebirthErr }
@@ -245,7 +267,9 @@ function PlayerService.resetSimulation(player)
 	if not rt or not d then
 		return
 	end
+	local mult = rt.sim and rt.sim.devSpawnMult
 	rt.sim = Simulation.new(d.activeCity, serverNow())
+	rt.sim.devSpawnMult = mult
 	local index = PlotService.plotOf(player)
 	if index then
 		visitorsRemote:FireAllClients("clear", index)

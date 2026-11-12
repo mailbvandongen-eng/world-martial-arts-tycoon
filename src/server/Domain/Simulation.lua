@@ -388,7 +388,7 @@ function Simulation.step(d, sim, ctx, rng, dt)
 	if Economy.boostActive(d, "customers", now) then
 		spawnMult = spawnMult * Monetization.boosts.customers.spawnMult
 	end
-	local interval = Formulas.spawnInterval(rec and rec.level or 1, d.reputation, spawnMult)
+	local interval = Formulas.spawnInterval(rec and rec.level or 1, d.reputation, spawnMult * (sim.devSpawnMult or 1))
 	local maxVisitors = Formulas.maxVisitors(Academy.totalCapacity(d, sim.cityId, now))
 	sim.spawnTimer = sim.spawnTimer + dt
 	local spawned = 0
@@ -407,6 +407,18 @@ function Simulation.step(d, sim, ctx, rng, dt)
 	end
 	if sim.spawnTimer > interval then
 		sim.spawnTimer = interval
+	end
+	-- developer burst: extra visitors right away (capacity limits still apply)
+	while (sim.devBurst or 0) > 0 and spawned < 6 and sim.activeCount < maxVisitors do
+		sim.devBurst = sim.devBurst - 1
+		local plan = Simulation.planVisit(d, sim, ctx, rng)
+		sim.active[plan.id] = plan
+		sim.activeCount = sim.activeCount + 1
+		if plan.outcome == "train" then
+			table.insert(sim.pending, plan)
+		end
+		table.insert(plans, plan)
+		spawned = spawned + 1
 	end
 	-- remove visitors that have left
 	for id, plan in pairs(sim.active) do

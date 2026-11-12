@@ -1003,6 +1003,53 @@ suite("activities: students progress, graduate and achievements unlock", functio
 	check(d2.discStats.karate and d2.discStats.karate.served > 0, "per-discipline statistics")
 end)
 
+suite("dev tools: scenarios and direct edits produce valid saves", function()
+	local DevTools = H.load("ServerScriptService/Server/Domain/DevTools")
+	local DevConfig = H.load("ReplicatedStorage/Shared/Config/Dev")
+	for _, sc in ipairs(DevConfig.scenarios) do
+		local d = DevTools.scenario(sc.id, 7)
+		check(d ~= nil, sc.id .. " scenario builds")
+		local copy = Util.deepCopy(d)
+		Schema.validate(copy)
+		eq(Util.count(copy.cities), Util.count(d.cities), sc.id .. " survives validation (cities)")
+		local rooms, roomsAfter = 0, 0
+		for _, b in pairs(d.cities) do
+			rooms = rooms + Util.count(b.rooms)
+		end
+		for _, b in pairs(copy.cities) do
+			roomsAfter = roomsAfter + Util.count(b.rooms)
+		end
+		eq(roomsAfter, rooms, sc.id .. " survives validation (rooms)")
+		-- every room with a trainer has a matching trainer
+		for _, b in pairs(d.cities) do
+			for _, room in pairs(b.rooms) do
+				if room.trainer then
+					check(d.trainers[room.trainer] ~= nil, sc.id .. " trainer exists")
+				end
+			end
+		end
+		-- the scenario actually plays: visitors find classes
+		local sim = Simulation.new(d.activeCity, NOW)
+		local rng = RNG.new(3)
+		local trained = 0
+		for i = 1, 40 do
+			local plan = Simulation.planVisit(d, sim, { now = NOW + i * 3 }, rng)
+			if plan.outcome == "train" then
+				trained = trained + 1
+			end
+		end
+		check(trained > 0, sc.id .. " visitors train (" .. trained .. "/40)")
+	end
+	local late = DevTools.scenario("late", 1)
+	eq(Util.count(late.cities), #Cities.list, "late game has every city")
+	local d = DevTools.scenario("new", 1)
+	check(DevTools.placeRoom(d, "smalltown", 2, "sumo_room", 5), "place a sumo dojo at level 5")
+	check(d.disciplines.sumo, "placing a room unlocks its discipline")
+	check(not DevTools.placeRoom(d, "smalltown", 3, "reception", 1), "no second reception")
+	check(DevTools.unlockCity(d, "tokyo", true) and d.cities.amsterdam and d.cities.tokyo, "unlocking Tokyo unlocks the cities before it")
+	check(DevTools.setValue(d, "cash", 0 / 0) and d.cash == d.cash, "NaN cash ignored")
+end)
+
 suite("poses: sampling and blending", function()
 	local m = Poses.moves.karate_punch
 	local p0 = Poses.sample(m, 0)

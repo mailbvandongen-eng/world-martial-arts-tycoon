@@ -1,6 +1,7 @@
 -- "More" menu: everything that is not on the main navigation.
 
 local Kit = require(script.Parent.Parent.Kit)
+local State = require(script.Parent.Parent.Parent.Controllers.State)
 
 local C = Kit.colors
 
@@ -24,7 +25,11 @@ return {
 	build = function(body, args, ui)
 		local grid = Kit.scroll(body, { Size = UDim2.fromScale(1, 1) })
 		Kit.grid(grid, UDim2.fromOffset(140, 110), 12)
-		for i, item in ipairs(ITEMS) do
+		local items = table.clone(ITEMS)
+		if State.derived and State.derived.isDev then
+			table.insert(items, { "🛠", "Developer", "dev" })
+		end
+		for i, item in ipairs(items) do
 			local b = Kit.button(grid, "", function()
 				ui.open(item[3], item[4])
 			end, { LayoutOrder = i }, "dark")

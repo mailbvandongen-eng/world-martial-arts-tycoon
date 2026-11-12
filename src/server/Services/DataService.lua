@@ -157,11 +157,58 @@ function DataService.load(player)
 	return nil, "Session locked"
 end
 
+-- Developer sandbox: the real save is set aside and nothing is written while
+-- testing. Leaving the sandbox brings the real progress back unchanged.
+function DataService.enterSandbox(player)
+	local p = profiles[player]
+	if not p or p.sandbox then
+		return false
+	end
+	p.realData = HttpService:JSONDecode(HttpService:JSONEncode(p.data))
+	p.sandbox = true
+	return true
+end
+
+function DataService.exitSandbox(player)
+	local p = profiles[player]
+	if not p or not p.sandbox then
+		return false
+	end
+	p.data = Schema.validate(Schema.migrate(p.realData))
+	p.realData = nil
+	p.sandbox = false
+	return true
+end
+
+function DataService.isSandbox(player)
+	local p = profiles[player]
+	return p ~= nil and p.sandbox == true
+end
+
+-- Replace the (sandboxed) save with another table, e.g. a test scenario.
+function DataService.replaceData(player, data)
+	local p = profiles[player]
+	if not p or not p.sandbox then
+		return false
+	end
+	p.data = data
+	return true
+end
+
 -- Save now. release = true removes the session lock (player leaving).
 function DataService.save(player, release)
 	local p = profiles[player]
 	if not p then
 		return false
+	end
+	if p.sandbox then
+		if not release then
+			return true -- sandbox: pretend success, keep the real save untouched
+		end
+		-- leaving while sandboxed: store the real progress, not the test data
+		p.data = Schema.validate(Schema.migrate(p.realData))
+		p.sandbox = false
+		p.realData = nil
 	end
 	while p.saving do
 		task.wait(0.1)
