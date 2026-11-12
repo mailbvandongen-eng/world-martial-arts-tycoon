@@ -2,11 +2,14 @@
 -- bodies), auras, the title above the head, and emote/victory-pose requests.
 
 local Players = game:GetService("Players")
+local InsertService = game:GetService("InsertService")
+local ServerStorage = game:GetService("ServerStorage")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage.Shared
 local Remotes = require(Shared.Modules.Remotes)
 local Cosmetics = require(Shared.Config.Cosmetics)
 local Cities = require(Shared.Config.Cities)
+local Clothing = require(Shared.Config.Clothing)
 
 local DataService = require(script.Parent.DataService)
 
@@ -218,6 +221,101 @@ local function applyTitle(folder, character, player, d)
 	t2.Parent = bb
 end
 
+---------------------------------------------------------------- classic clothing
+
+-- Uploaded clothing images are Decals; Shirt/Pants need the decal's image id.
+local textureCache = {}
+local function textureFor(name)
+	local decalId = name and Clothing[name]
+	if not decalId or decalId == 0 then
+		return nil
+	end
+	if textureCache[decalId] == nil then
+		local ok, model = pcall(function()
+			return InsertService:LoadAsset(decalId)
+		end)
+		local texture = false
+		if ok and model then
+			local decal = model:FindFirstChildWhichIsA("Decal", true)
+			if decal then
+				texture = decal.Texture
+			end
+			model:Destroy()
+		else
+			warn("[CosmeticService] could not load clothing " .. name .. " (" .. tostring(decalId) .. ")")
+		end
+		textureCache[decalId] = texture
+	end
+	return textureCache[decalId] or nil
+end
+
+local function hiddenFolder(player)
+	local root = ServerStorage:FindFirstChild("WMAT_HiddenClothing")
+	if not root then
+		root = Instance.new("Folder")
+		root.Name = "WMAT_HiddenClothing"
+		root.Parent = ServerStorage
+	end
+	local f = root:FindFirstChild(tostring(player.UserId))
+	if not f then
+		f = Instance.new("Folder")
+		f.Name = tostring(player.UserId)
+		f.Parent = root
+	end
+	return f
+end
+
+local function isLayered(item)
+	if not item:IsA("Accessory") then
+		return false
+	end
+	local handle = item:FindFirstChild("Handle")
+	return handle ~= nil and handle:FindFirstChildOfClass("WrapLayer") ~= nil
+end
+
+-- Put the avatar's own clothing back (after taking an outfit off).
+local function restoreClothing(player, character)
+	for _, item in ipairs(character:GetChildren()) do
+		if item.Name == "WMAT_Shirt" or item.Name == "WMAT_Pants" then
+			item:Destroy()
+		end
+	end
+	local f = hiddenFolder(player)
+	for _, item in ipairs(f:GetChildren()) do
+		item.Parent = character
+	end
+end
+
+-- Dress the avatar in classic Shirt/Pants; their own clothes are stored.
+local function applyClothing(player, character, style)
+	local shirtTex = textureFor(style.shirt)
+	local pantsTex = textureFor(style.pants)
+	if not shirtTex and not pantsTex then
+		return false
+	end
+	local f = hiddenFolder(player)
+	for _, item in ipairs(character:GetChildren()) do
+		local hide = isLayered(item) or item:IsA("ShirtGraphic")
+			or (shirtTex and item:IsA("Shirt")) or (pantsTex and item:IsA("Pants"))
+		if hide then
+			item.Parent = f
+		end
+	end
+	if shirtTex then
+		local shirt = Instance.new("Shirt")
+		shirt.Name = "WMAT_Shirt"
+		shirt.ShirtTemplate = shirtTex
+		shirt.Parent = character
+	end
+	if pantsTex then
+		local pants = Instance.new("Pants")
+		pants.Name = "WMAT_Pants"
+		pants.PantsTemplate = pantsTex
+		pants.Parent = character
+	end
+	return true
+end
+
 function CosmeticService.apply(player)
 	local character = player.Character
 	local d = DataService.get(player)
@@ -238,8 +336,13 @@ function CosmeticService.apply(player)
 	folder.Parent = character
 	local eq = d.cosmetics.equipped
 	local outfit = eq.outfit and Cosmetics.byId[eq.outfit]
-	if outfit and outfit.style then
-		applyOutfit(folder, character, outfit.style)
+	restoreClothing(player, character)
+	if outfit then
+		-- real clothing when uploaded, simple overlay parts as a fallback
+		local dressed = applyClothing(player, character, outfit)
+		if not dressed and outfit.style then
+			applyOutfit(folder, character, outfit.style)
+		end
 	end
 	local aura = eq.aura and Cosmetics.byId[eq.aura]
 	if aura and aura.style then
@@ -249,6 +352,7 @@ function CosmeticService.apply(player)
 end
 
 local function onCharacter(player, character)
+	hiddenFolder(player):ClearAllChildren()
 	character:WaitForChild("HumanoidRootPart", 10)
 	character:WaitForChild("Head", 10)
 	task.wait(0.5) -- let the avatar finish loading its parts
