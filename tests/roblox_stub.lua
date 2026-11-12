@@ -97,6 +97,10 @@ end
 CFrame.__add = function(a, v)
 	return newCF({ a.p[1] + v.X, a.p[2] + v.Y, a.p[3] + v.Z }, a.r)
 end
+function CFrame:VectorToWorldSpace(v)
+	local t = apply(self.r, { v.X, v.Y, v.Z })
+	return Vector3.new(t[1], t[2], t[3])
+end
 function CFrame:GetComponents()
 	local r = self.r
 	return self.p[1], self.p[2], self.p[3], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8], r[9]

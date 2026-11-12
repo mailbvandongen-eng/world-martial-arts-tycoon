@@ -35,6 +35,10 @@ Layout.FRONT = FRONT
 Layout.RECEPTION = { x0 = -44, x1 = 44, z0 = FRONT, z1 = FRONT + 40 }
 local ROW0 = Layout.RECEPTION.z1
 
+-- Competition hall: the free corner left of the reception. Its back opens onto
+-- the first walkway. Sparring, belt exams and your own kumite happen here.
+Layout.COMPETITION = { x0 = -94.5, x1 = -44.5, z0 = FRONT + 1.5, z1 = FRONT + 39.5, cx = -69.5, cz = FRONT + 21, door = 14, floor = 0.64 }
+
 local COLUMN_X = { -73, -31, 31, 73 }
 local FILL_ORDER = { 2, 3, 1, 4 } -- inner columns first
 

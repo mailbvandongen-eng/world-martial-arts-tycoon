@@ -174,6 +174,35 @@ function DevTools.addStudents(d, rng, disciplineId, count, rank)
 	return true
 end
 
+-- Every student (optionally of one discipline) is ready for a belt exam now.
+function DevTools.examReadyAll(d, disciplineId)
+	local n = 0
+	for _, s in pairs(d.students) do
+		if not disciplineId or s.discipline == disciplineId then
+			local cap = #Disciplines.byId[s.discipline].ranks
+			if s.rank < cap then
+				s.examReady = true
+				s.waited = 0
+				s.examAt = nil
+				n = n + 1
+			end
+			d.mastery[s.discipline] = d.mastery[s.discipline] or { rank = 1, xp = 0 }
+			d.mastery[s.discipline].rank = math.max(d.mastery[s.discipline].rank, math.min(cap, s.rank + 1))
+		end
+	end
+	return true, n
+end
+
+-- Opponent level of your own kumite (1-20) and no cooldowns.
+function DevTools.setKumiteLevel(d, level)
+	level = clampInt(level, 1, 20) or 1
+	d.compete.kumiteWins = level - 1
+	d.compete.kumiteLosses = 0
+	d.compete.lastKumite = 0
+	d.compete.lastSpar = 0
+	return true
+end
+
 function DevTools.completeMissions(d)
 	for _, list in ipairs({ d.quests.daily, d.quests.weekly }) do
 		for _, q in ipairs(list) do

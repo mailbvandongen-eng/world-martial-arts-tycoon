@@ -11,6 +11,7 @@ local Config = require(Shared.Config.Activities)
 local Disciplines = require(Shared.Config.Disciplines)
 local Trainers = require(Shared.Config.Trainers)
 local Economy = require(script.Parent.Economy)
+local Bout = require(Shared.Modules.Bout)
 
 local Activities = {}
 
@@ -125,11 +126,12 @@ function Activities.tournamentAt(now)
 	local startAt = slot * Config.TOURNAMENT_EVERY
 	local regEnd = startAt + Config.TOURNAMENT_REGISTRATION
 	local rounds = {}
+	-- round r is fought in the arena during the gap before rounds[r], its result shows at rounds[r]
 	for r = 1, 3 do
-		rounds[r] = regEnd + (r - 1) * Config.TOURNAMENT_ROUND_GAP
+		rounds[r] = regEnd + r * Config.TOURNAMENT_ROUND_GAP
 	end
 	return {
-		key = slot, id = def.id, name = def.name, discipline = def.discipline,
+		key = slot, id = def.id, name = def.name, discipline = def.discipline, format = def.format,
 		startAt = startAt, regEnd = regEnd, rounds = rounds, endAt = rounds[3] + 8,
 		nextAt = startAt + Config.TOURNAMENT_EVERY,
 	}
@@ -196,9 +198,10 @@ function Activities.match(a, b, rng)
 	return winner, loser
 end
 
--- Plays the whole bracket. Returns rounds = { { {a, b, winner} ... } ... } and
--- places = { [entry] = place }.
-function Activities.playBracket(bracket, seed)
+-- Plays the whole bracket. Returns rounds = { { {a, b, winner, bout} ... } ... } and
+-- places = { [entry] = place }. With opts (discipline / format) every match also
+-- gets a full bout (Modules/Bout) that ends with the same winner, for the arena.
+function Activities.playBracket(bracket, seed, opts)
 	local rng = RNG.new(seed + 99)
 	local rounds = {}
 	local places = {}
@@ -210,7 +213,12 @@ function Activities.playBracket(bracket, seed)
 		for i = 1, #current, 2 do
 			local a, b = current[i], current[i + 1]
 			local winner, loser = Activities.match(a, b, rng)
-			table.insert(results, { a = a, b = b, winner = winner })
+			local bout
+			if opts then
+				bout = Bout.simulate({ name = a.name, skill = a.strength }, { name = b.name, skill = b.strength }, seed * 31 + r * 7 + i,
+					{ discipline = opts.discipline or "karate", format = opts.format, favour = winner == a and 1 or 2 })
+			end
+			table.insert(results, { a = a, b = b, winner = winner, bout = bout })
 			table.insert(nextRound, winner)
 			places[loser] = placeForLosers[r]
 		end
@@ -322,27 +330,45 @@ function Activities.returningStudent(d, rng, disciplineId)
 	return rng:pick(options)
 end
 
--- A class finished for a roster student: progress, maybe a graduation.
--- Returns new rank (or nil). The academy's mastery caps student ranks.
-function Activities.studentAttended(d, student, classXp, satisfaction)
-	student.visits = student.visits + 1
-	student.satisfaction = math.floor(student.satisfaction * 0.8 + satisfaction * 0.2 + 0.5)
-	local disc = Disciplines.byId[student.discipline]
-	if not disc then
+-- Add training XP to a student. When the next rank is earned the student
+-- becomes ready for a belt exam (Domain/Competition). Returns "ready" the moment
+-- that happens. The academy's mastery caps student ranks.
+function Activities.addStudentXp(d, student, xp)
+	local cap = (d.mastery[student.discipline] and d.mastery[student.discipline].rank) or 1
+	local need = Activities.rankXpNeeded(student.rank)
+	if student.examReady then
 		return nil
 	end
-	local cap = (d.mastery[student.discipline] and d.mastery[student.discipline].rank) or 1
-	student.xp = student.xp + classXp * (0.6 + student.talent * 0.2)
-	if student.rank < cap and student.xp >= Activities.rankXpNeeded(student.rank) then
-		student.xp = student.xp - Activities.rankXpNeeded(student.rank)
-		student.rank = student.rank + 1
-		d.stats.graduations = (d.stats.graduations or 0) + 1
-		return student.rank
+	student.xp = student.xp + xp * (0.6 + student.talent * 0.2)
+	if student.rank < cap and student.xp >= need then
+		student.xp = student.xp - need
+		student.examReady = true
+		student.waited = 0
+		return "ready"
 	end
 	if student.rank >= cap then
-		student.xp = math.min(student.xp, Activities.rankXpNeeded(student.rank))
+		student.xp = math.min(student.xp, need)
 	end
 	return nil
+end
+
+-- A class finished for a roster student: progress, maybe exam-ready. A ready
+-- student who waits AUTO_EXAM_AFTER classes is examined by the sensei
+-- (autoExam, passed in by the caller). Returns new rank (or nil), plus "ready".
+function Activities.studentAttended(d, student, classXp, satisfaction, autoExam)
+	student.visits = student.visits + 1
+	student.satisfaction = math.floor(student.satisfaction * 0.8 + satisfaction * 0.2 + 0.5)
+	if not Disciplines.byId[student.discipline] then
+		return nil
+	end
+	if student.examReady then
+		student.waited = (student.waited or 0) + 1
+		if student.waited >= Config.AUTO_EXAM_AFTER and autoExam then
+			return autoExam(student)
+		end
+		return nil
+	end
+	return nil, Activities.addStudentXp(d, student, classXp)
 end
 
 ---------------------------------------------------------------- achievements
@@ -362,6 +388,8 @@ local function achieved(d, a)
 			end
 		end
 		return false
+	elseif kind == "compete" then
+		return ((d.compete or {})[arg] or 0) >= a.target
 	elseif kind == "cities" then
 		return Util.count(d.cities) >= a.target
 	end

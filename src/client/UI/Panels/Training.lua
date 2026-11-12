@@ -12,6 +12,7 @@ local Config = require(Shared.Config.Activities)
 local Disciplines = require(Shared.Config.Disciplines)
 
 local Kit = require(script.Parent.Parent.Kit)
+local KumiteHUD = require(script.Parent.Parent.KumiteHUD)
 local State = require(script.Parent.Parent.Parent.Controllers.State)
 
 local C = Kit.colors
@@ -154,7 +155,17 @@ return {
 			Kit.clear(body)
 			local d = State.data
 			Kit.label(body, "Short skill challenges between collections. Earn XP, mastery and some cash. First " .. Config.GAME_DAILY_FULL .. " plays per day give full rewards.", { Size = UDim2.new(1, 0, 0, 40), TextColor3 = C.muted, TextSize = 14 })
-			local grid = Kit.scroll(body, { Position = UDim2.fromOffset(0, 46), Size = UDim2.new(1, 0, 1, -46) })
+			-- your own kumite on the mat of the competition hall
+			local km = Kit.frame(body, { BackgroundColor3 = C.panel2, Position = UDim2.fromOffset(0, 46), Size = UDim2.new(1, -8, 0, 84) })
+			Kit.corner(km, 12)
+			Kit.stroke(km, C.bad, 2)
+			local c = d.compete or {}
+			Kit.label(km, Config.kumite.icon .. "  " .. Config.kumite.name, { Position = UDim2.fromOffset(14, 6), Size = UDim2.new(1, -260, 0, 26), TextSize = 19, Font = Kit.fontBlack, TextColor3 = C.gold })
+			Kit.label(km, Config.kumite.description .. "\nRecord: " .. (c.kumiteWins or 0) .. " wins, " .. (c.kumiteLosses or 0) .. " losses  •  best streak " .. (c.bestStreak or 0), { Position = UDim2.fromOffset(14, 34), Size = UDim2.new(1, -260, 0, 44), TextSize = 12, Font = Kit.fontBody, TextYAlignment = Enum.TextYAlignment.Top })
+			Kit.button(km, "👊 Step on the mat", function()
+				KumiteHUD.start(ui)
+			end, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -14, 0.5, 0), Size = UDim2.fromOffset(220, 54), TextSize = 17, Font = Kit.fontBlack }, "bad")
+			local grid = Kit.scroll(body, { Position = UDim2.fromOffset(0, 138), Size = UDim2.new(1, 0, 1, -138) })
 			Kit.grid(grid, UDim2.fromOffset(260, 190), 12)
 			for i, id in ipairs(Config.gameOrder) do
 				local g = Config.games[id]

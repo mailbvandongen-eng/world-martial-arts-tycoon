@@ -70,6 +70,8 @@ function Schema.defaults()
 		tokens = { scout = 0 },
 		minigame = { day = -1, plays = 0, lastAt = 0, best = {} },
 		tournament = { key = -1 },
+		-- competition hall: sparring, belt exams, your own kumite
+		compete = { lastSpar = 0, lastKumite = 0, kumiteWins = 0, kumiteLosses = 0, streak = 0, bestStreak = 0, examsPassed = 0, examsFailed = 0, spars = 0 },
 		flags = {},
 		settings = { music = true, sfx = true, npcDensity = 1, lowGraphics = false },
 		lastOnline = 0,
@@ -278,6 +280,11 @@ function Schema.validate(d)
 			st.satisfaction = num(st.satisfaction, 0, 100, 70)
 			st.seed = math.floor(num(st.seed, 1, 2147483646, 1))
 			st.name = type(st.name) == "string" and string.sub(st.name, 1, 30) or "Student"
+			st.examReady = st.examReady == true or nil
+			st.waited = st.examReady and math.floor(num(st.waited, 0, 1000, 0)) or nil
+			st.examAt = st.examAt and num(st.examAt, 0, BIG, 0) or nil
+			st.wins = st.wins and math.floor(num(st.wins, 0, 1e9, 0)) or nil
+			st.losses = st.losses and math.floor(num(st.losses, 0, 1e9, 0)) or nil
 		end
 	end
 	d.nextStudentId = math.floor(num(d.nextStudentId, 1, 1e9, 1))

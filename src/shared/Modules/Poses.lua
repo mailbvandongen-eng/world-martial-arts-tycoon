@@ -408,6 +408,16 @@ M.emote_kata_salute = move(3, { K(0, P.stand), K(0.5, P.stand, { lsp = 80, rsp =
 M.emote_champion = move(3, { K(0, P.stand), K(0.5, P.stand, { lsr = 160, rsr = 160, lel = 0, rel = 0, np = -15 }), K(2.2, P.stand, { lsr = 165, rsr = 165, lel = 0, rel = 0, np = -20, wy = 15 }), K(3, P.stand) }, { loop = false })
 M.emote_flex = move(3, { K(0, P.stand), K(0.5, P.stand, { lsr = 90, rsr = 90, lel = 120, rel = 120, lsy = -60, rsy = -60, lhr = 15, rhr = 15 }), K(2.2, P.stand, { lsr = 95, rsr = 95, lel = 130, rel = 130, lsy = -60, rsy = -60, lhr = 15, rhr = 15, wp = -5 }), K(3, P.stand) }, { loop = false })
 
+-- competition: taking a hit, referee and judges (Bout playback)
+M.hit_react = move(1.2, { K(0, P.guardBox), K(0.15, P.guardBox, { rp = -18, np = -25, wy = 20, lsp = 20, rsp = 20, lel = 60, rel = 60 }), K(0.5, P.guardBox, { rp = -8, np = -10 }), K(1.2, P.guardBox) })
+M.ref_stand = move(3, { K(0, P.stand, { lsr = 10, rsr = 10 }), K(1.5, P.stand, { lsr = 10, rsr = 10, ny = 15 }), K(3, P.stand, { lsr = 10, rsr = 10 }) })
+M.ref_start = move(1.6, { K(0, P.stand), K(0.3, P.stand, { lsp = 90, rsp = 90, lel = 0, rel = 0, lsy = 40, rsy = 40 }), K(0.7, P.stand, { lsp = 70, rsp = 70, lel = 0, rel = 0, lsy = -10, rsy = -10 }), K(1.6, P.stand) })
+M.ref_point_r = move(1.6, { K(0, P.stand), K(0.25, P.stand, { rsr = 120, rel = 0, wr = -5 }), K(1.2, P.stand, { rsr = 120, rel = 0, wr = -5 }), K(1.6, P.stand) })
+M.ref_point_l = move(1.6, { K(0, P.stand), K(0.25, P.stand, { lsr = 120, lel = 0, wr = 5 }), K(1.2, P.stand, { lsr = 120, lel = 0, wr = 5 }), K(1.6, P.stand) })
+M.judge_sit = move(4, { K(0, P.stand, { seat = true, lhp = 90, rhp = 90, lkn = 90, rkn = 90, lsp = 35, rsp = 35, lel = 50, rel = 50 }), K(2, P.stand, { seat = true, lhp = 90, rhp = 90, lkn = 90, rkn = 90, lsp = 35, rsp = 35, lel = 50, rel = 50, ny = 12 }), K(4, P.stand, { seat = true, lhp = 90, rhp = 90, lkn = 90, rkn = 90, lsp = 35, rsp = 35, lel = 50, rel = 50 }) })
+M.judge_flag_r = move(3, { K(0, P.stand, { seat = true, lhp = 90, rhp = 90, lkn = 90, rkn = 90, rsp = 160, rel = 0, lsp = 35, lel = 50 }), K(3, P.stand, { seat = true, lhp = 90, rhp = 90, lkn = 90, rkn = 90, rsp = 160, rel = 0, lsp = 35, lel = 50 }) })
+M.judge_flag_l = move(3, { K(0, P.stand, { seat = true, lhp = 90, rhp = 90, lkn = 90, rkn = 90, lsp = 160, lel = 0, rsp = 35, rel = 50 }), K(3, P.stand, { seat = true, lhp = 90, rhp = 90, lkn = 90, rkn = 90, lsp = 160, lel = 0, rsp = 35, rel = 50 }) })
+
 Poses.moves = M
 Poses.base = P
 

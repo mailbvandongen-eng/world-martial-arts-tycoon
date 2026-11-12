@@ -22,6 +22,8 @@ Quests.daily = {
 	{ id = "d_challenges", text = "Complete %d training challenges", track = "miniGames", target = 3, reward = { cash = 0.8, gems = 10, scoutTokens = 1 } },
 	{ id = "d_fitness", text = "Complete a fitness challenge", track = "miniGame_fitness", target = 1, reward = { cash = 0.6, gems = 8 } },
 	{ id = "d_tournament", text = "Enter a tournament", track = "tournamentsEntered", target = 1, reward = { cash = 1, gems = 12 } },
+	{ id = "d_kumite", text = "Win a kumite bout yourself", track = "kumiteWins", target = 1, reward = { cash = 1, gems = 12 } },
+	{ id = "d_spar", text = "Hold %d sparring bouts", track = "spars", target = 3, reward = { cash = 0.8, gems = 10 } },
 }
 
 Quests.weekly = {
@@ -34,6 +36,8 @@ Quests.weekly = {
 	{ id = "w_rate", text = "Rate %d academies", track = "academiesRated", target = 3, reward = { cash = 3, gems = 40 } },
 	{ id = "w_tournament", text = "Win a tournament", track = "tournamentWins", target = 1, reward = { cash = 6, gems = 80, scoutTokens = 2 } },
 	{ id = "w_graduate", text = "Promote %d students to a new rank", track = "graduations", target = 5, reward = { cash = 5, gems = 60, scoutTokens = 1 } },
+	{ id = "w_exams", text = "Pass %d belt exams", track = "examsPassed", target = 5, reward = { cash = 5, gems = 60 } },
+	{ id = "w_kumite", text = "Win %d kumite bouts yourself", track = "kumiteWins", target = 8, reward = { cash = 5, gems = 70, scoutTokens = 1 } },
 	{ id = "w_challenges", text = "Score 80+ in %d training challenges", track = "miniGameGood", target = 10, reward = { cash = 4, gems = 50 } },
 }
 

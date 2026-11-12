@@ -7,6 +7,9 @@ local Disciplines = require(Shared.Config.Disciplines)
 local Format = require(Shared.Modules.Format)
 
 local Kit = require(script.Parent.Parent.Kit)
+local KumiteHUD = require(script.Parent.Parent.KumiteHUD)
+local Formulas = require(Shared.Modules.Formulas)
+local Config = require(Shared.Config.Activities)
 local State = require(script.Parent.Parent.Parent.Controllers.State)
 
 local C = Kit.colors
@@ -21,8 +24,11 @@ return {
 	height = 600,
 	build = function(body, args, ui)
 		local filter = args.discipline or "all"
-		local head = Kit.frame(body, { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 40) })
-		local scroll = Kit.scroll(body, { Position = UDim2.fromOffset(0, 48), Size = UDim2.new(1, 0, 1, -48) })
+		-- competition hall actions
+		local bar = Kit.frame(body, { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 44) })
+		Kit.list(bar, 8, true)
+		local head = Kit.frame(body, { BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 52), Size = UDim2.new(1, 0, 0, 40) })
+		local scroll = Kit.scroll(body, { Position = UDim2.fromOffset(0, 100), Size = UDim2.new(1, 0, 1, -100) })
 		Kit.list(scroll, 6)
 		local lastSig
 		local function render(force)
@@ -36,13 +42,32 @@ return {
 				end
 			end
 			local sig = filter .. #list
+			local ready = 0
 			for _, s in ipairs(list) do
-				sig = sig .. s.id .. s.rank .. math.floor(s.xp)
+				sig = sig .. s.id .. s.rank .. math.floor(s.xp) .. tostring(s.examReady) .. tostring(s.examAt)
+			end
+			for _, s in pairs(d.students) do
+				if s.examReady then
+					ready = ready + 1
+				end
 			end
 			if sig == lastSig and not force then
 				return
 			end
 			lastSig = sig
+			Kit.clear(bar)
+			Kit.list(bar, 8, true)
+			Kit.button(bar, "🥋 Sparring", function()
+				ui.act("spar", { discipline = filter ~= "all" and filter or nil }, "Sparring starts in the Competition Hall!")
+			end, { Size = UDim2.fromOffset(170, 42), LayoutOrder = 1, TextSize = 15, Font = Kit.fontBlack }, "gold")
+			local examAll = Kit.button(bar, "🎓 Exam day (" .. ready .. " ready)", function()
+				ui.act("examAll", {}, "Exams start in the Competition Hall!")
+			end, { Size = UDim2.fromOffset(210, 42), LayoutOrder = 2, TextSize = 15, Font = Kit.fontBlack }, ready > 0 and "good" or "dark")
+			Kit.setEnabled(examAll, ready > 0)
+			Kit.button(bar, "👊 Kumite yourself", function()
+				KumiteHUD.start(ui)
+			end, { Size = UDim2.fromOffset(190, 42), LayoutOrder = 3, TextSize = 15, Font = Kit.fontBlack }, "bad")
+			Kit.label(bar, "Bouts are shown in the Competition Hall, left of the reception.", { Size = UDim2.fromOffset(200, 42), LayoutOrder = 4, TextSize = 11, TextColor3 = C.muted, TextWrapped = true })
 			Kit.clear(head)
 			Kit.list(head, 6, true)
 			local function chip(id, text, order)
@@ -87,10 +112,20 @@ return {
 				local cap = (d.mastery[s.discipline] and d.mastery[s.discipline].rank) or 1
 				local need = rankXpNeeded(s.rank)
 				local atCap = s.rank >= cap
-				Kit.label(card, atCap and "Needs a higher academy mastery rank" or ("Next: " .. (disc.ranks[s.rank + 1] and disc.ranks[s.rank + 1].name or "max")), { Position = UDim2.new(0.42, 0, 0, 8), Size = UDim2.new(0.3, 0, 0, 18), TextSize = 12, TextColor3 = atCap and C.rep or C.muted })
-				Kit.progress(card, atCap and 1 or s.xp / need, atCap and C.rep or Kit.c3(disc.accent), { Position = UDim2.new(0.42, 0, 0, 32), Size = UDim2.new(0.28, 0, 0, 10) })
+				if s.examReady then
+					local now = workspace:GetServerTimeNow()
+					local wait = s.examAt and s.examAt - now or 0
+					local fee = math.floor(Formulas.rewardCashUnit(d.level) * Config.EXAM_FEE * s.rank)
+					local eb = Kit.button(card, wait > 0 and ("Retry in " .. math.ceil(wait) .. "s") or ("🎓 Exam: " .. (disc.ranks[s.rank + 1] and disc.ranks[s.rank + 1].name or "") .. " • " .. Format.cash(fee)), function()
+						ui.act("exam", { id = s.id }, s.name .. " steps onto the exam mat!")
+					end, { Position = UDim2.new(0.42, 0, 0, 10), Size = UDim2.new(0.3, 0, 0, 42), TextSize = 13, Font = Kit.fontBlack, TextWrapped = true }, "good")
+					Kit.setEnabled(eb, wait <= 0 and d.cash >= fee)
+				else
+					Kit.label(card, atCap and "Needs a higher academy mastery rank" or ("Next: " .. (disc.ranks[s.rank + 1] and disc.ranks[s.rank + 1].name or "max")), { Position = UDim2.new(0.42, 0, 0, 8), Size = UDim2.new(0.3, 0, 0, 18), TextSize = 12, TextColor3 = atCap and C.rep or C.muted })
+					Kit.progress(card, atCap and 1 or s.xp / need, atCap and C.rep or Kit.c3(disc.accent), { Position = UDim2.new(0.42, 0, 0, 32), Size = UDim2.new(0.28, 0, 0, 10) })
+				end
 				Kit.label(card, string.rep("★", s.talent) .. string.rep("☆", 5 - s.talent), { Position = UDim2.new(0.74, 0, 0, 6), Size = UDim2.new(0.24, 0, 0, 22), TextColor3 = C.gold, TextSize = 15, TextXAlignment = Enum.TextXAlignment.Right })
-				Kit.label(card, Format.commas(s.visits) .. " classes • " .. math.floor(s.satisfaction) .. "% happy", { Position = UDim2.new(0.74, 0, 0, 32), Size = UDim2.new(0.24, 0, 0, 20), TextSize = 12, TextColor3 = C.muted, TextXAlignment = Enum.TextXAlignment.Right })
+				Kit.label(card, Format.commas(s.visits) .. " classes • " .. ((s.wins or s.losses) and ((s.wins or 0) .. "W " .. (s.losses or 0) .. "L • ") or "") .. math.floor(s.satisfaction) .. "% happy", { Position = UDim2.new(0.74, 0, 0, 32), Size = UDim2.new(0.24, 0, 0, 20), TextSize = 12, TextColor3 = C.muted, TextXAlignment = Enum.TextXAlignment.Right })
 			end
 		end
 		render(true)

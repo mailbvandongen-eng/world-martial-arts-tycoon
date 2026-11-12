@@ -33,6 +33,8 @@ local LeaderboardService = require(script.Parent.LeaderboardService)
 local MonetizationService = require(script.Parent.MonetizationService)
 local CosmeticService = require(script.Parent.CosmeticService)
 local TournamentService = require(script.Parent.TournamentService)
+local CompetitionService = require(script.Parent.CompetitionService)
+local Competition = require(Domain.Competition)
 local Activities = require(Domain.Activities)
 local DevTools = require(Domain.DevTools)
 local ActivityConfig = require(Shared.Config.Activities)
@@ -627,6 +629,146 @@ end
 
 ---------------------------------------------------------------- active gameplay
 
+---------------------------------------------------------------- competition hall
+
+local function examNotify(player, res)
+	return function()
+		PlayerService.notify(player, "examResult", { name = res.red.name, passed = res.passed, rankName = res.rankName, total = res.total, passMark = res.passMark, reason = res.reason, discipline = res.discipline })
+	end
+end
+
+-- Two of your students spar on the mat (any two of one discipline when none are given).
+handlers.spar = function(player, d, p)
+	if not needPlot(player) then
+		return fail("Claim an academy first")
+	end
+	local rt = PlayerService.runtime(player)
+	local a, b = Validate.string(p.a, 20), Validate.string(p.b, 20)
+	if not a or not b then
+		a, b = Competition.pickSparPair(d, rt.rng, Validate.oneOf(p.discipline, Disciplines.byId))
+		if not a then
+			return fail("You need two regular students of one discipline")
+		end
+	end
+	local success, res = Competition.spar(d, a, b, workspace:GetServerTimeNow(), rt.rng:int(1, 2147483000))
+	if not success then
+		return fail(res)
+	end
+	local endAt = CompetitionService.stage(player, res)
+	PlayerService.track(player, "spars", 1)
+	CompetitionService.after(endAt, function()
+		PlayerService.notify(player, "sparResult", { winner = res.winner, method = res.method, ready = res.ready })
+	end)
+	return ok({ t0 = res.t0, endAt = endAt, red = res.red.name, blue = res.blue.name })
+end
+
+local function runExam(player, d, sid)
+	local rt = PlayerService.runtime(player)
+	local success, res = Competition.exam(d, sid, workspace:GetServerTimeNow(), rt.rng:int(1, 2147483000))
+	if not success then
+		return false, res
+	end
+	local endAt = CompetitionService.stage(player, res)
+	if res.passed then
+		PlayerService.giveXp(player, 25)
+		PlayerService.track(player, "graduations", 1)
+		PlayerService.track(player, "examsPassed", 1)
+	end
+	CompetitionService.after(endAt, examNotify(player, res))
+	return true, res
+end
+
+handlers.exam = function(player, d, p)
+	if not needPlot(player) then
+		return fail("Claim an academy first")
+	end
+	local sid = Validate.string(p.id, 20)
+	if not sid then
+		return fail("Unknown student")
+	end
+	local success, res = runExam(player, d, sid)
+	if not success then
+		return fail(res)
+	end
+	return ok({ t0 = res.t0, endAt = res.endAt, passed = res.passed })
+end
+
+-- Exam day: every ready student (up to 6) takes the exam, one after another.
+handlers.examAll = function(player, d)
+	if not needPlot(player) then
+		return fail("Claim an academy first")
+	end
+	local ids = {}
+	local now = workspace:GetServerTimeNow()
+	for id, s in pairs(d.students) do
+		if s.examReady and not (s.examAt and now < s.examAt) then
+			table.insert(ids, id)
+		end
+	end
+	table.sort(ids)
+	if #ids == 0 then
+		return fail("No student is ready for an exam")
+	end
+	local count, lastErr = 0, nil
+	for i = 1, math.min(6, #ids) do
+		local success, err = runExam(player, d, ids[i])
+		if success then
+			count = count + 1
+		else
+			lastErr = err
+		end
+	end
+	if count == 0 then
+		return fail(lastErr or "No exam could start")
+	end
+	return ok({ count = count })
+end
+
+-- Your own kumite against a rival fighter.
+handlers.startKumite = function(player, d)
+	if not needPlot(player) then
+		return fail("Claim an academy first")
+	end
+	if not CompetitionService.isFree(player) then
+		return fail("The mat is in use. Wait for the bout to finish.")
+	end
+	local rt = PlayerService.runtime(player)
+	local now = workspace:GetServerTimeNow()
+	local success, challenge, prompts = Competition.startKumite(d, now, rt.rng:int(1, 2147483000))
+	if not success then
+		return fail(challenge)
+	end
+	rt.kumite = challenge
+	CompetitionService.startKumite(player, challenge, prompts)
+	return ok({ startAt = challenge.startAt, duration = challenge.duration, prompts = prompts, opponent = challenge.opponent, level = challenge.level })
+end
+
+handlers.submitKumite = function(player, d, p)
+	local rt = PlayerService.runtime(player)
+	if type(p.responses) ~= "table" then
+		return fail("Invalid answers")
+	end
+	local success, res = Competition.finishKumite(d, rt.kumite, p.responses, workspace:GetServerTimeNow(), Util.dayNumber(os.time()))
+	if not success then
+		return fail(res)
+	end
+	rt.kumite = nil
+	if res.mastery > 0 then
+		for _, rank in ipairs(Economy.addMastery(d, "karate", res.mastery)) do
+			PlayerService.notify(player, "rankup", { discipline = "karate", rank = rank, name = Disciplines.byId.karate.ranks[rank].name })
+			task.spawn(CosmeticService.rankUp, player, "karate")
+		end
+	end
+	PlayerService.giveXp(player, res.xp)
+	PlayerService.recordEarning(player, res.cash)
+	PlayerService.track(player, "miniGames", 1)
+	if res.won then
+		PlayerService.track(player, "kumiteWins", 1)
+	end
+	CompetitionService.finishKumite(player, res)
+	return ok(res)
+end
+
 handlers.startChallenge = function(player, d, p)
 	local gameId = Validate.oneOf(p.game, ActivityConfig.games)
 	if not gameId then
@@ -889,9 +1031,38 @@ devOps.grant = function(player, d, p)
 	return success and ok(res) or fail(res)
 end
 
+-- Competition hall: ready every student for an exam, set the kumite level,
+-- clear the sparring / kumite cooldowns.
+devOps.compete = function(player, d, p)
+	if p.mode == "examReady" then
+		local _, n = DevTools.examReadyAll(d, Validate.oneOf(p.discipline, Disciplines.byId))
+		if n == 0 then
+			DevTools.addStudents(d, PlayerService.runtime(player).rng, p.discipline or "karate", 4, 2)
+			DevTools.examReadyAll(d, p.discipline)
+		end
+	elseif p.mode == "kumiteLevel" then
+		DevTools.setKumiteLevel(d, p.level)
+	elseif p.mode == "cooldowns" then
+		d.compete.lastSpar = 0
+		d.compete.lastKumite = 0
+		for _, s in pairs(d.students) do
+			s.examAt = nil
+		end
+	else
+		return fail("Unknown mode")
+	end
+	return ok()
+end
+
 devOps.teleport = function(player, d, p)
 	local character = player.Character
-	if p.to == "arena" and character then
+	if p.to == "hall" and character then
+		local index = PlotService.plotOf(player)
+		if index then
+			local c = Layout.COMPETITION
+			character:PivotTo(PlotService.plotCFrame(index) * CFrame.new(c.cx + 6, 4, c.z1 - 6))
+		end
+	elseif p.to == "arena" and character then
 		character:PivotTo(CFrame.new(-150, 5, 14))
 	elseif p.to == "home" then
 		local index = PlotService.plotOf(player) or select(2, PlotService.claim(player))

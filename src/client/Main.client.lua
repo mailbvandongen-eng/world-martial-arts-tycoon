@@ -9,6 +9,7 @@ local NPCController = require(Controllers.NPCController)
 local WorldController = require(Controllers.WorldController)
 local EffectsController = require(Controllers.EffectsController)
 local EmoteController = require(Controllers.EmoteController)
+local BoutController = require(Controllers.BoutController)
 
 local UI = require(UIFolder.UI)
 local HUD = require(UIFolder.HUD)
@@ -30,6 +31,7 @@ HUD.build(UI)
 EffectsController.init(UI, AudioController)
 EmoteController.init()
 NPCController.init(AudioController)
+BoutController.init(AudioController)
 WorldController.init(UI)
 
 -- apply graphics setting once the first state arrives

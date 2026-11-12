@@ -480,6 +480,9 @@ local function handleSettlement(player, d, rt, res, ctx)
 			visitorsRemote:FireAllClients("graduate", index, { planId = g.planId, slot = g.slot })
 		end
 	end
+	if res.examReady then
+		PlayerService.notify(player, "examReady", res.examReady)
+	end
 	if res.happy then
 		PlayerService.track(player, "happyStudents", 1)
 	end

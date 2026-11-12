@@ -109,6 +109,25 @@ handlers.graduation = function(p)
 	ui.toast("🎓 " .. p.name .. " earned the " .. p.rankName .. (disc and (" in " .. disc.name) or "") .. "!")
 	audio.play("rankup")
 end
+handlers.examReady = function(p)
+	local disc = Disciplines.byId[p.discipline]
+	ui.toast("🥋 " .. p.name .. " is ready for the next " .. (disc and disc.name or "") .. " exam. Open Students → Exam.")
+end
+handlers.sparResult = function(p)
+	ui.toast("🥋 Sparring: " .. p.winner .. " wins (" .. p.method .. ")")
+	for _, name in ipairs(p.ready or {}) do
+		ui.toast(name .. " is now ready for a belt exam!")
+	end
+end
+handlers.examResult = function(p)
+	if p.passed then
+		ui.banner("🎓 EXAM PASSED", p.name .. " earned the " .. p.rankName .. "  •  kata " .. p.total, Color3.fromRGB(255, 215, 90))
+		audio.play("rankup")
+		burst(Color3.fromRGB(255, 215, 90), 40)
+	else
+		ui.toast("❌ " .. p.name .. " failed the exam: " .. (p.reason or "") .. ". Try again later.", "warn")
+	end
+end
 handlers.achievement = function(p)
 	ui.banner("ACHIEVEMENT!", p.name .. "  •  +◆" .. p.gems, Color3.fromRGB(120, 200, 255))
 	audio.play("unlock")

@@ -90,7 +90,7 @@ return {
 					local matches = t.rounds[r]
 					local card = Kit.card(scroll, 40 + #matches * 30, 2 + r)
 					local shown = r <= revealed
-					Kit.label(card, ROUND_NAMES[r] .. (shown and "" or ("  •  starts in " .. Format.time(info.rounds[r] - now))), { Position = UDim2.fromOffset(14, 8), Size = UDim2.new(1, -28, 0, 20), TextColor3 = C.gold, Font = Kit.fontBlack, TextSize = 14 })
+					Kit.label(card, ROUND_NAMES[r] .. (shown and "" or (now >= info.rounds[r] - Config.TOURNAMENT_ROUND_GAP and "  •  fighting now in the arena" or ("  •  starts in " .. Format.time(info.rounds[r] - Config.TOURNAMENT_ROUND_GAP - now)))), { Position = UDim2.fromOffset(14, 8), Size = UDim2.new(1, -28, 0, 20), TextColor3 = C.gold, Font = Kit.fontBlack, TextSize = 14 })
 					for i, m in ipairs(matches) do
 						local mine = (m.aUser == State.localUserId) or (m.bUser == State.localUserId)
 						local text = m.a .. "  vs  " .. m.b

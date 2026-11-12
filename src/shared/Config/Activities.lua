@@ -52,10 +52,11 @@ Activities.GOOD = 0.35
 -- academies. Matches are simulated on the server.
 Activities.TOURNAMENT_EVERY = 480
 Activities.TOURNAMENT_REGISTRATION = 150
-Activities.TOURNAMENT_ROUND_GAP = 35
+Activities.TOURNAMENT_ROUND_GAP = 50 -- a full bout fits in the gap
 Activities.TOURNAMENT_SIZE = 8
 Activities.tournaments = {
-	{ id = "karate_champ", name = "Karate Championship", discipline = "karate" },
+	{ id = "karate_champ", name = "Karate Kumite Championship", discipline = "karate", format = "kumite" },
+	{ id = "kata_open", name = "Kata Open", discipline = "karate", format = "kata" },
 	{ id = "boxing_tour", name = "Boxing Tournament", discipline = "boxing" },
 	{ id = "judo_champ", name = "Judo Championship", discipline = "judo" },
 	{ id = "intl_cup", name = "International Martial Arts Cup", discipline = nil },
@@ -96,7 +97,40 @@ Activities.achievements = {
 	{ id = "international", name = "International Academy Owner", text = "Run academies in 3 cities.", check = "cities", target = 3, gems = 60 },
 	{ id = "world_empire", name = "World Empire", text = "Unlock all 10 cities.", check = "cities", target = 10, gems = 300 },
 	{ id = "challenger", name = "Challenger", text = "Complete 50 training challenges.", check = "stat:miniGames", target = 50, gems = 40 },
+	{ id = "kumite_first", name = "On the Mat", text = "Win your first kumite bout yourself.", check = "compete:kumiteWins", target = 1, gems = 20 },
+	{ id = "kumite_25", name = "Kumite Champion", text = "Win 25 kumite bouts yourself.", check = "compete:kumiteWins", target = 25, gems = 100 },
+	{ id = "kumite_streak", name = "Unbeaten", text = "Win 5 kumite bouts in a row.", check = "compete:bestStreak", target = 5, gems = 60 },
+	{ id = "exams_20", name = "Examiner", text = "Pass 20 belt exams.", check = "compete:examsPassed", target = 20, gems = 60 },
+	{ id = "sparring_50", name = "Sparring Club", text = "Hold 50 sparring bouts.", check = "compete:spars", target = 50, gems = 40 },
 	{ id = "graduations_25", name = "Proud Teacher", text = "Promote 25 students to a new rank.", check = "stat:graduations", target = 25, gems = 50 },
+}
+
+---------------------------------------------------------------- competition hall
+-- Sparring between two of your students, belt exams and your own kumite are
+-- shown on the mat of the competition hall, with referee, judges and scoreboard.
+Activities.SPAR_COOLDOWN = 20 -- seconds between sparring bouts
+Activities.EXAM_RETRY = 90 -- seconds before a failed student may try again
+Activities.AUTO_EXAM_AFTER = 6 -- classes a ready student waits before the sensei examines them
+Activities.EXAM_FEE = 0.15 -- x mission cash unit x rank
+Activities.EXAM_KUMITE_FROM = 3 -- from this rank on an exam also has a kumite part
+
+-- Your own kumite: the opponent attacks, you answer with the right block or
+-- counter at the right moment. Opponents get faster as you keep winning.
+Activities.kumite = {
+	name = "Kumite on the Mat", icon = "🥋",
+	description = "Step on the mat yourself. Block the opponent's attack, punch when you see an opening. 8-point lead wins.",
+	-- opponent attack -> the right answer, points if you miss it, points you score
+	attacks = {
+		{ call = "Jodan zuki", hint = "High punch", answer = "High block", lose = 1, perfect = 2, good = 1, move = "karate_punch" },
+		{ call = "Chudan zuki", hint = "Body punch", answer = "Mid block", lose = 1, perfect = 2, good = 1, move = "karate_punch" },
+		{ call = "Mae geri", hint = "Front kick", answer = "Low block", lose = 2, perfect = 2, good = 1, move = "karate_front_kick" },
+		{ call = "Opening!", hint = "Guard is open", answer = "Punch", lose = 0, perfect = 3, good = 2, move = "karate_stance" },
+	},
+	answers = { "High block", "Mid block", "Low block", "Punch" },
+	answerMoves = { ["High block"] = "karate_block", ["Mid block"] = "karate_block", ["Low block"] = "karate_block", Punch = "karate_punch" },
+	prompts = 18, gapMax = 1.6, gapMin = 0.85, speedUp = 0.04, -- per opponent level
+	lead = 8,
+	COOLDOWN = 15,
 }
 
 ---------------------------------------------------------------- students

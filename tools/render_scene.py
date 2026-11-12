@@ -28,7 +28,8 @@ def main():
     # entrance of plot 5 faces -z (towards the boulevard)
     import os
     eye_scale = float(os.environ.get("EYE", "1"))
-    eye = (cx + 120.0 * eye_scale, 210.0 * eye_scale, cz - 230.0 * eye_scale)
+    flip = -1.0 if os.environ.get("FLIP") else 1.0
+    eye = (cx + 120.0 * eye_scale * flip, 210.0 * eye_scale, cz - 230.0 * eye_scale * flip)
     fwd = [target[i] - eye[i] for i in range(3)]
     fl = math.sqrt(sum(f * f for f in fwd))
     fwd = [f / fl for f in fwd]

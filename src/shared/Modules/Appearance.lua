@@ -233,7 +233,8 @@ function Appearance.describe(opts)
 		end
 		r = Util.clamp(r, 1, #disc.ranks)
 		local rk = disc.ranks[r]
-		extra({ kind = "belt", color = rk.color, stripe = rk.stripe, sash = outfit.beltStyle == "sash" })
+		-- competitions: AKA wears a red belt, AO a blue one
+		extra({ kind = "belt", color = opts.beltColor or rk.color, stripe = not opts.beltColor and rk.stripe or nil, sash = outfit.beltStyle == "sash" })
 		spec.rankName = rk.name
 	elseif disc then
 		spec.rankName = disc.ranks[Util.clamp(rank, 1, #disc.ranks)].name

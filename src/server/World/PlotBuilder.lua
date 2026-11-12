@@ -205,8 +205,61 @@ function PlotBuilder.buildBase(parent, index, cityId, ownerName)
 		part(model, Vector3.new(side[3], 0.6, side[4]), cf * CFrame.new(side[1], wallH + 0.3, side[2]), th.roof, Enum.Material.Slate, "Coping")
 	end
 	buildGate(model, cf, city, arch, ownerName and (ownerName .. "'s Academy") or "FREE ACADEMY")
+	PlotBuilder.buildCompetitionHall(model, cf, arch, th)
 	model.Parent = parent
 	return model
+end
+
+-- Competition hall (left of the reception): tatami with the 8x8 fighting area,
+-- AKA / AO start lines, judges' table, scoreboard frame, stands. The fighters,
+-- referee, judges and the live scoreboard text are drawn by the clients
+-- (BoutController). The back opens onto the first walkway.
+function PlotBuilder.buildCompetitionHall(model, cf, arch, th)
+	local c = Layout.COMPETITION
+	local w, dpt = c.x1 - c.x0, c.z1 - c.z0
+	local mid = cf * CFrame.new((c.x0 + c.x1) / 2, 0, (c.z0 + c.z1) / 2)
+	part(model, Vector3.new(w, 0.4, dpt), mid * CFrame.new(0, 0.2, 0), { 168, 128, 84 }, Enum.Material.WoodPlanks, "HallFloor")
+	local centre = cf * CFrame.new(c.cx, 0, c.cz)
+	part(model, Vector3.new(14, 0.2, 14), centre * CFrame.new(0, 0.5, 0), { 40, 80, 170 }, Enum.Material.Fabric, "TatamiSafety")
+	part(model, Vector3.new(10, 0.02, 10), centre * CFrame.new(0, 0.61, 0), { 200, 40, 40 }, Enum.Material.Fabric, "TatamiBorder")
+	part(model, Vector3.new(9.2, 0.03, 9.2), centre * CFrame.new(0, 0.625, 0), { 60, 110, 200 }, Enum.Material.Fabric, "TatamiArea")
+	part(model, Vector3.new(0.25, 0.04, 1.2), centre * CFrame.new(-2.8, 0.64, 0), { 220, 40, 40 }, Enum.Material.SmoothPlastic, "LineAka")
+	part(model, Vector3.new(0.25, 0.04, 1.2), centre * CFrame.new(2.8, 0.64, 0), { 240, 240, 240 }, Enum.Material.SmoothPlastic, "LineAo")
+	-- back wall with a wide door onto the walkway
+	local wallH = 12
+	local seg = (w - c.door) / 2
+	local wallC = { 40, 38, 36 }
+	part(model, Vector3.new(seg, wallH, 1), cf * CFrame.new(c.x0 + seg / 2, wallH / 2, c.z1 - 0.5), wallC, Enum.Material.SmoothPlastic, "HallWallBL")
+	part(model, Vector3.new(seg, wallH, 1), cf * CFrame.new(c.x1 - seg / 2, wallH / 2, c.z1 - 0.5), wallC, Enum.Material.SmoothPlastic, "HallWallBR")
+	part(model, Vector3.new(c.door, 2, 1), cf * CFrame.new(c.cx, wallH - 1, c.z1 - 0.5), wallC, Enum.Material.SmoothPlastic, "HallLintel")
+	local sign = part(model, Vector3.new(c.door + 4, 2.4, 0.3), cf * CFrame.new(c.cx, wallH - 1, c.z1 + 0.2), { 20, 20, 24 }, Enum.Material.SmoothPlastic, "HallSign")
+	textOn(sign, Enum.NormalId.Back, "🥋 COMPETITION HALL", { 212, 175, 55 }, 30)
+	-- scoreboard frame on the front wall (the client draws the live score on it)
+	local board = part(model, Vector3.new(16, 6.5, 0.4), cf * CFrame.new(c.cx, 8, c.z0 + 0.4), { 15, 15, 18 }, Enum.Material.SmoothPlastic, "ScoreboardFrame")
+	board:SetAttribute("Scoreboard", true)
+	part(model, Vector3.new(16.6, 0.3, 0.6), cf * CFrame.new(c.cx, 11.4, c.z0 + 0.4), { 212, 175, 55 }, Enum.Material.Metal, "ScoreboardTrim")
+	-- judges' table on the left (judges face the mat)
+	part(model, Vector3.new(1.6, 2.6, 11), cf * CFrame.new(c.x0 + 7.2, 1.3, c.cz), { 30, 28, 26 }, Enum.Material.Wood, "JudgesTable")
+	part(model, Vector3.new(1.8, 0.2, 11.2), cf * CFrame.new(c.x0 + 7.2, 2.65, c.cz), { 212, 175, 55 }, Enum.Material.Metal, "JudgesTableTop")
+	for i = -2, 2 do
+		part(model, Vector3.new(1.4, 1.6, 1.4), cf * CFrame.new(c.x0 + 5.2, 1.2, c.cz + i * 2.2), { 50, 50, 56 }, Enum.Material.Fabric, "JudgeChair")
+	end
+	-- stands for spectators along the reception wall
+	for _, dz in ipairs({ -7, 7 }) do
+		Props.build("bleachers", model, cf * CFrame.new(c.x1 - 9, 0.4, c.cz + dz) * CFrame.Angles(0, rad(90), 0), { crowd = { { 200, 60, 60 }, { 240, 240, 240 }, { 60, 110, 200 } } })
+	end
+	-- banners, lights and benches for the waiting fighters
+	Props.build("banner", model, cf * CFrame.new(c.cx - 12, 0.4, c.z0 + 1), { accent = { 200, 40, 40 }, glyph = "AKA" })
+	Props.build("banner", model, cf * CFrame.new(c.cx + 12, 0.4, c.z0 + 1), { accent = { 60, 110, 200 }, glyph = "AO" })
+	Props.build("spotlight", model, cf * CFrame.new(c.cx - 9, 0.4, c.z1 - 4) * CFrame.Angles(0, rad(180), 0), { accent = { 255, 235, 200 } })
+	Props.build("spotlight", model, cf * CFrame.new(c.cx + 9, 0.4, c.z1 - 4) * CFrame.Angles(0, rad(180), 0), { accent = { 255, 235, 200 } })
+	Props.build("bench", model, cf * CFrame.new(c.cx - 10, 0.4, c.z1 - 3), {})
+	Props.build("bench", model, cf * CFrame.new(c.cx + 10, 0.4, c.z1 - 3), {})
+	local lamp = part(model, Vector3.new(3, 0.4, 3), cf * CFrame.new(c.cx, wallH - 0.5, c.cz), { 255, 245, 225 }, Enum.Material.Neon, "HallLight")
+	local light = Instance.new("PointLight")
+	light.Range = 30
+	light.Brightness = 1.2
+	light.Parent = lamp
 end
 
 -- City architecture around the plot (outside the playable area).

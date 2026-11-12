@@ -968,8 +968,17 @@ suite("activities: students progress, graduate and achievements unlock", functio
 	check(d.students[s.id] ~= nil, "student added to the roster")
 	check(not Act.studentAttended(d, s, 100, 80), "rank capped by academy mastery (white belt dojo)")
 	d.mastery.karate = { rank = 9, xp = 0 }
-	local promoted = Act.studentAttended(d, s, 1000, 80)
-	eq(promoted, 2, "graduates to yellow belt")
+	local promoted, ready = Act.studentAttended(d, s, 1000, 80)
+	check(promoted == nil and ready == "ready" and s.examReady, "enough XP makes the student exam-ready (no automatic belt)")
+	local autoRank
+	for _ = 1, 10 do
+		autoRank = autoRank or Act.studentAttended(d, s, 10, 80, function(st)
+			st.rank = st.rank + 1
+			st.examReady = nil
+			return st.rank
+		end)
+	end
+	eq(autoRank, 2, "after waiting too long the sensei holds the exam")
 	for _ = 1, 50 do
 		Act.newStudent(d, rng, "karate", 1)
 	end
@@ -1001,6 +1010,129 @@ suite("activities: students progress, graduate and achievements unlock", functio
 	check(Util.count(d2.students) > 0, "members get student profiles (" .. Util.count(d2.students) .. ")")
 	check(grads > 0, "students graduate over time (" .. grads .. ")")
 	check(d2.discStats.karate and d2.discStats.karate.served > 0, "per-discipline statistics")
+end)
+
+suite("bout engine: every discipline gives a fair, finished, consistent bout", function()
+	local Bout = H.load("ReplicatedStorage/Shared/Modules/Bout")
+	for _, disc in ipairs(Disciplines.list) do
+		local strongWins, forced = 0, 0
+		for seed = 1, 120 do
+			local b = Bout.simulate({ name = "A", skill = 90 }, { name = "B", skill = 45 }, seed, { discipline = disc.id })
+			if b.winner == 1 then
+				strongWins = strongWins + 1
+			end
+			local st = Bout.stateAt(b, b.duration)
+			check(st.finished, disc.id .. " bout ends")
+			if b.format == "kumite" or b.format == "points" then
+				check(st.score[1] == b.score[1] and st.score[2] == b.score[2], disc.id .. " scoreboard replay matches the result")
+				check(b.method:find("Senshu") or b.method:find("Decision") or b.score[b.winner] >= b.score[3 - b.winner], disc.id .. " winner has the most points")
+			end
+			check(b.duration > 3 and b.duration < 60, disc.id .. " bout length " .. math.floor(b.duration))
+			local last = -1
+			for _, ev in ipairs(b.events) do
+				check(ev.t >= last - 1e-9, disc.id .. " events in time order")
+				last = ev.t
+				if ev.m then
+					check(Poses.moves[ev.m] ~= nil, disc.id .. " move exists: " .. ev.m)
+				end
+				if ev.d and ev.d ~= "" then
+					check(Poses.moves[ev.d] ~= nil, disc.id .. " defence move exists: " .. ev.d)
+				end
+			end
+			if Bout.simulate({ skill = 90 }, { skill = 45 }, seed, { discipline = disc.id, favour = 2 }).winner == 2 then
+				forced = forced + 1
+			end
+		end
+		check(strongWins >= 70 and strongWins <= 115, disc.id .. " stronger fighter usually wins (" .. strongWins .. "/120)")
+		eq(forced, 120, disc.id .. " a bracket result can be forced")
+	end
+	local k = Bout.simulate({ skill = 50 }, { skill = 50 }, 3, { format = "kata", discipline = "karate" })
+	eq(k.score[1] + k.score[2], 5, "kata: five judges' flags")
+	check(k.score[k.winner] >= 3, "kata: majority wins")
+	local e = Bout.kataScore({ skill = 60 }, 4, { rank = 2 })
+	check(#e.marks == 3 and e.total >= 15 and e.total <= 28.5, "exam kata: three marks")
+end)
+
+suite("competition hall: sparring, belt exams and your own kumite", function()
+	local Comp = H.load("ServerScriptService/Server/Domain/Competition")
+	local Act = H.load("ServerScriptService/Server/Domain/Activities")
+	local Cfg = H.load("ReplicatedStorage/Shared/Config/Activities")
+	local d = Schema.validate(Schema.defaults())
+	d.mastery.karate = { rank = 9, xp = 0 }
+	d.cash = 1e6
+	local rng = RNG.new(2)
+	local ok = Comp.spar(d, "x", "y", NOW, 1)
+	check(not ok, "sparring needs two students")
+	for _ = 1, 4 do
+		Act.newStudent(d, rng, "karate", rng:int(1, 1e6))
+	end
+	local a, b = Comp.pickSparPair(d, rng)
+	check(a and b and a ~= b, "a sparring pair is picked")
+	local ok2, res = Comp.spar(d, a, b, NOW, 5)
+	check(ok2 and #res.bouts == 1 and res.bouts[1].format == "kumite", "karate students spar kumite")
+	check(not Comp.spar(d, a, b, NOW + 1, 6), "sparring has a cooldown")
+	check(Comp.spar(d, a, b, NOW + Cfg.SPAR_COOLDOWN + 1, 7), "and works again afterwards")
+	-- exams
+	local s = d.students[a]
+	check(not Comp.exam(d, a, NOW, 1), "no exam before the student is ready")
+	s.xp = 0
+	Act.addStudentXp(d, s, 10000)
+	check(s.examReady, "student becomes exam-ready")
+	local passed, failed = 0, 0
+	s.talent = 1
+	for seed = 1, 60 do
+		s.rank, s.examReady, s.examAt = 2, true, nil
+		local okE, r = Comp.exam(d, a, NOW + seed * 1000, seed)
+		check(okE, "exam runs")
+		if r.passed then
+			passed = passed + 1
+			eq(s.rank, 3, "passing gives the next belt")
+			check(not s.examReady, "and clears the ready flag")
+		else
+			failed = failed + 1
+			eq(s.rank, 2, "failing keeps the belt")
+			check(s.examAt and s.examAt > NOW + seed * 1000, "failing sets a retry time")
+		end
+	end
+	check(passed > 5 and failed > 0, "exams can be passed and failed (" .. passed .. "/" .. failed .. ")")
+	s.rank, s.examReady, s.examAt = 4, true, nil
+	local _, r4 = Comp.exam(d, a, NOW * 2, 9)
+	eq(#r4.bouts, 2, "green belt and up: kata + kumite")
+	d.cash = 0
+	s.examReady, s.examAt = true, nil
+	check(not Comp.exam(d, a, NOW * 3, 9), "exam fee is required")
+	-- own kumite
+	local d2 = Schema.validate(Schema.defaults())
+	local okK, ch, prompts = Comp.startKumite(d2, NOW, 42)
+	check(okK and #prompts == Cfg.kumite.prompts, "kumite starts with opponent attacks")
+	check(not Comp.startKumite(d2, NOW + 1, 43), "kumite cooldown")
+	-- perfect answers win
+	local answers = {}
+	for i, p in ipairs(prompts) do
+		answers[i] = { i = i, a = Cfg.kumite.attacks[p.a].answer, t = p.t }
+	end
+	local sc = Comp.scoreKumite(ch, answers)
+	eq(sc.winner, 1, "perfect answers win the bout")
+	check(sc.score[1] - sc.score[2] >= Cfg.kumite.lead, "with an 8-point lead")
+	check(not Comp.finishKumite(d2, ch, answers, ch.startAt + 0.5, 1), "cannot submit before the bout")
+	local okF, fr = Comp.finishKumite(d2, ch, answers, ch.startAt + sc.endT, 1)
+	check(okF and fr.won and fr.cash > 0, "a win pays out")
+	eq(d2.compete.kumiteWins, 1, "win counted")
+	eq(Comp.kumiteLevel(d2), 2, "next opponent is stronger")
+	-- no answers lose
+	local ch2 = { kind = "kumite", seed = 9, level = 1, startAt = NOW, duration = 40, opponent = {} }
+	eq(Comp.scoreKumite(ch2, {}).winner, 2, "doing nothing loses")
+	-- wrong answer = opponent scores
+	local p2 = Comp.kumitePrompts(1, 9)
+	local wrong = Comp.scoreKumite(ch2, { { i = 1, a = "Punch", t = p2[1].t } })
+	check(p2[1].a == 4 or wrong.score[2] > 0, "a wrong answer lets the opponent score")
+	-- level 20 is faster than level 1
+	local fast = Comp.kumitePrompts(20, 1)
+	local slow = Comp.kumitePrompts(1, 1)
+	check(fast[#fast].t < slow[#slow].t, "stronger opponents attack faster")
+	-- old saves get the new fields
+	local old = Schema.validate({ cash = 5 })
+	check(old.compete and old.compete.kumiteWins == 0, "compete defaults for old saves")
 end)
 
 suite("dev tools: scenarios and direct edits produce valid saves", function()

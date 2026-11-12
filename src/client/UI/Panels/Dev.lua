@@ -81,6 +81,9 @@ return {
 		btn(sb, "Teleport: arena", function()
 			dev("teleport", { to = "arena" })
 		end)
+		btn(sb, "Teleport: competition hall", function()
+			dev("teleport", { to = "hall" })
+		end)
 
 		-- scenarios
 		local sc = section("SCENARIOS (replace your sandbox save)", 76)
@@ -204,6 +207,34 @@ return {
 				dev("visitors", { rate = rate }, "Visitor rate x" .. rate)
 			end)
 		end
+
+		-- competition hall
+		local ch = section("COMPETITION HALL (sparring, belt exams, your own kumite)", 156)
+		btn(ch, "Spar now (discipline)", function()
+			dev("compete", { mode = "cooldowns" })
+			if dev("students", { discipline = sel.discipline, count = 2, rank = sel.level }) then
+				ui.act("spar", { discipline = sel.discipline }, "Sparring starts in the hall")
+			end
+		end, "gold")
+		btn(ch, "All students exam-ready", function()
+			dev("compete", { mode = "examReady", discipline = sel.discipline }, "Students are ready for their exam")
+		end, "gold")
+		btn(ch, "Exam day now", function()
+			dev("compete", { mode = "cooldowns" })
+			ui.act("examAll", {}, "Exams start in the hall")
+		end, "gold")
+		btn(ch, "Kumite yourself", function()
+			dev("compete", { mode = "cooldowns" })
+			ui.open("training")
+		end, "bad")
+		for _, lvl in ipairs({ 1, 5, 10, 20 }) do
+			btn(ch, "Kumite level " .. lvl, function()
+				dev("compete", { mode = "kumiteLevel", level = lvl }, "Next opponent: level " .. lvl)
+			end)
+		end
+		btn(ch, "Clear cooldowns", function()
+			dev("compete", { mode = "cooldowns" }, "Cooldowns cleared")
+		end)
 
 		-- activities
 		local as = section("CHALLENGES, TOURNAMENTS, CHAMPIONSHIP", 196)

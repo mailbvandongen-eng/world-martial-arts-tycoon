@@ -21,6 +21,7 @@ local Academy = require(script.Parent.Academy)
 local Economy = require(script.Parent.Economy)
 local TrainerGen = require(script.Parent.TrainerGen)
 local Activities = require(script.Parent.Activities)
+local Competition = require(script.Parent.Competition)
 
 local Simulation = {}
 
@@ -509,7 +510,12 @@ function Simulation.settleOne(d, sim, ctx, rng, plan)
 	if Disciplines.byId[plan.interest] then
 		local student = plan.studentId and d.students[plan.studentId]
 		if student then
-			local newRank = Activities.studentAttended(d, student, plan.mastery or 4, plan.satisfaction)
+			local newRank, ready = Activities.studentAttended(d, student, plan.mastery or 4, plan.satisfaction, function(st)
+				return Competition.autoExam(d, st, plan.seed or 1)
+			end)
+			if ready then
+				res.examReady = { name = student.name, discipline = student.discipline, id = student.id }
+			end
 			if newRank then
 				local disc = Disciplines.byId[student.discipline]
 				res.graduation = { name = student.name, rank = newRank, rankName = disc.ranks[newRank].name, discipline = student.discipline, planId = plan.id, slot = plan.slot }

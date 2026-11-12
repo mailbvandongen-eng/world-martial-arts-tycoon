@@ -26,7 +26,8 @@ sandbox is active.
 | Activities | every challenge (cooldown reset), every tournament (20 s registration, rounds every 12 s), championship |
 | Missions & events | complete, reroll, reset daily/cooldowns; force any event or follow the calendar |
 | Purchases | grant any game pass or product effect (passes not really bought are removed on the next live join) |
-| Teleport | own academy, arena |
+| Competition hall | spar now, all students exam-ready, exam day, kumite yourself, kumite level 1/5/10/20, clear cooldowns |
+| Teleport | own academy, arena, competition hall |
 
 ## Test status
 

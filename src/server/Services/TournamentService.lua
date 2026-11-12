@@ -44,7 +44,7 @@ local function snapshot()
 		for r, list in ipairs(current.rounds) do
 			rounds[r] = {}
 			for i, m in ipairs(list) do
-				rounds[r][i] = { a = m.a.name, b = m.b.name, winner = m.winner.name, aUser = m.a.userId, bUser = m.b.userId }
+				rounds[r][i] = { a = m.a.name, b = m.b.name, winner = m.winner.name, aUser = m.a.userId, bUser = m.b.userId, bout = m.bout }
 			end
 		end
 	end
@@ -80,7 +80,7 @@ local function resolve()
 		table.insert(list, e)
 	end
 	local bracket = Activities.fillBracket(list, current.info.key * 7 + 3)
-	local rounds, places = Activities.playBracket(bracket, current.info.key * 13 + 1)
+	local rounds, places = Activities.playBracket(bracket, math.abs(current.info.key) % 100000 * 13 + 1, { discipline = current.info.discipline, format = current.info.format })
 	current.rounds = rounds
 	current.places = places
 	current.resolved = true
@@ -121,9 +121,10 @@ function TournamentService.devStart(tournamentId, registrationSeconds)
 	end
 	local now = serverNow()
 	local reg = now + (registrationSeconds or 20)
+	local gap = Config.TOURNAMENT_ROUND_GAP
 	local info = {
-		key = -math.floor(now), id = def.id, name = def.name .. " (test)", discipline = def.discipline,
-		startAt = now, regEnd = reg, rounds = { reg, reg + 12, reg + 24 }, endAt = reg + 30, nextAt = reg + 60,
+		key = -math.floor(now), id = def.id, name = def.name .. " (test)", discipline = def.discipline, format = def.format,
+		startAt = now, regEnd = reg, rounds = { reg + gap, reg + gap * 2, reg + gap * 3 }, endAt = reg + gap * 3 + 8, nextAt = reg + gap * 3 + 40,
 	}
 	current = { info = info, entrants = {}, order = {} }
 	remote:FireAllClients("state", snapshot())

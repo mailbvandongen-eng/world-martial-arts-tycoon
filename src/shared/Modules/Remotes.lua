@@ -6,11 +6,13 @@
 --   Visitors  RemoteEvent     server -> all:    visitor plans (one message per visitor)
 --   Notify    RemoteEvent     server -> client: toasts and effects
 --   Emote     RemoteEvent     client -> server request / server -> all broadcast
+--   Tournament   RemoteEvent  server -> all: current tournament (bracket + bouts)
+--   Competition  RemoteEvent  server -> all: bouts shown on a competition hall mat
 
 local Remotes = {}
 
 Remotes.FUNCTIONS = { "Action" }
-Remotes.EVENTS = { "State", "Plots", "Visitors", "Notify", "Emote", "Tournament" }
+Remotes.EVENTS = { "State", "Plots", "Visitors", "Notify", "Emote", "Tournament", "Competition" }
 
 function Remotes.setup()
 	local ReplicatedStorage = game:GetService("ReplicatedStorage")
