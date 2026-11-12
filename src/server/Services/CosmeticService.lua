@@ -48,7 +48,7 @@ local function weldPart(folder, target, size, offset, color, material, shape)
 	p.Name = "Overlay"
 	p.Size = size
 	p.Color = color
-	p.Material = material or Enum.Material.Fabric
+	p.Material = material or Enum.Material.SmoothPlastic
 	p.CanCollide = false
 	p.CanQuery = false
 	p.CanTouch = false

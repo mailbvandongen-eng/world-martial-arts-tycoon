@@ -63,11 +63,9 @@ function Rig.build(spec, opts)
 	local rig = { model = model, parts = {}, extras = {}, dims = d, spec = spec, list = {}, cfs = {} }
 	local skin = spec.skin
 
-	local function fabric(name)
-		local col = spec.colors[name] or skin
-		if col ~= skin then
-			return Enum.Material.Fabric
-		end
+	-- Clothing uses SmoothPlastic too: Roblox's Fabric texture turns white
+	-- uniforms grey, and gis must read as clean white with a coloured belt.
+	local function fabric()
 		return Enum.Material.SmoothPlastic
 	end
 	local function body(name, size, shape)
@@ -91,7 +89,7 @@ function Rig.build(spec, opts)
 		table.insert(rig.extras, { part = part, parent = parentName, offset = offset })
 	end
 	local function add(parentName, name, size, color, offset, shape, material)
-		local part = newPart(model, name, size, c3(color), shape, material or Enum.Material.Fabric)
+		local part = newPart(model, name, size, c3(color), shape, material or Enum.Material.SmoothPlastic)
 		attach(parentName, part, offset)
 		return part
 	end
@@ -152,7 +150,7 @@ function Rig.build(spec, opts)
 			add("Chest", "LapelR", Vector3.new(w, d.chestH * 0.95, 0.06), col, CF(0.22, 0.02, -d.chestD / 2 - 0.03) * ANG(0, 0, rad(e.vneck and -24 or -18)))
 		elseif k == "belt" then
 			local col = e.color
-			add("Hips", "Belt", Vector3.new(d.hipsW + 0.08, 0.26, d.hipsD + 0.08), col, CF(0, d.hipsH / 2 - 0.08, 0))
+			add("Hips", "Belt", Vector3.new(d.hipsW + 0.12, 0.34, d.hipsD + 0.12), col, CF(0, d.hipsH / 2 - 0.08, 0))
 			add("Hips", "BeltKnot", Vector3.new(0.38, 0.24, 0.14), col, CF(e.sash and d.hipsW * 0.35 or 0, d.hipsH / 2 - 0.08, -d.hipsD / 2 - 0.08))
 			local tailX = e.sash and d.hipsW * 0.38 or 0.1
 			add("Hips", "BeltTailL", Vector3.new(0.14, e.sash and 0.8 or 0.55, 0.05), col, CF(tailX - 0.12, d.hipsH / 2 - 0.45, -d.hipsD / 2 - 0.08) * ANG(0, 0, rad(8)))
