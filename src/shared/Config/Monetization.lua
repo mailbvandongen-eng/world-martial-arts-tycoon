@@ -25,7 +25,7 @@ Monetization.gamePasses = {
 	-- Cosmetic bundles
 	{ key = "bundle_starter", id = 0, robux = 99, category = "bundles", name = "Starter Bundle", description = "One-time: 25,000 cash, 300 gems and a free Rare trainer of your first discipline.", grants = { cash = 25000, gems = 300, rareTrainer = true }, featured = true },
 	{ key = "bundle_striker", id = 0, robux = 199, category = "bundles", name = "Striker Cosmetic Bundle", description = "MMA fight gear outfit. Cosmetic only.", grants = { cosmetics = { "outfit_mma" } } },
-	{ key = "bundle_grappler", id = 0, robux = 199, category = "bundles", name = "Grappler Cosmetic Bundle", description = "Black BJJ gi outfit. Cosmetic only.", grants = { cosmetics = { "outfit_bjj_black" } } },
+	{ key = "bundle_grappler", id = 0, robux = 199, category = "bundles", name = "Grappler Cosmetic Bundle", description = "BJJ gi with black belt and patches. Cosmetic only.", grants = { cosmetics = { "outfit_bjj_black" } } },
 	{ key = "bundle_traditional", id = 0, robux = 249, category = "bundles", name = "Traditional Masters Bundle", description = "Silk Kung Fu suit, Crane pose and a Sakura garden decoration.", grants = { cosmetics = { "outfit_kungfu", "pose_crane", "deco_sakura" } }, seasonal = { from = { 3, 1 }, to = { 5, 31 }, label = "Spring collection" } },
 }
 

@@ -765,9 +765,16 @@ suite("appearance: every discipline looks like its martial art", function()
 	eq(kinds(k).belt.color[1], 25, "karate sensei wears a black belt")
 	local master = Appearance.describe({ seed = 2, discipline = "karate", role = "trainer", rarity = "legendary" })
 	check(kinds(master).belt.stripe ~= nil, "legendary karate master wears a dan-striped black belt")
-	for seed = 1, 30 do
-		local st = Appearance.describe({ seed = seed, discipline = "karate", role = "student", rank = 1 + seed % 9 })
-		eq(st.colors.Chest[1], 245, "karate student gi is white")
+	-- gi-based arts: always a white uniform, the belt shows the grade
+	for _, id in ipairs({ "karate", "judo", "taekwondo", "bjj" }) do
+		for seed = 1, 30 do
+			for _, role in ipairs({ "student", "trainer" }) do
+				local st = Appearance.describe({ seed = seed, discipline = id, role = role, rank = 1 + seed % 7, rarity = "rare" })
+				if st.top ~= "rashguard" then
+					eq(st.colors.Chest[1], 245, id .. " " .. role .. " wears a white uniform")
+				end
+			end
+		end
 	end
 	-- variety: 40 karate students are not identical
 	local seen = {}

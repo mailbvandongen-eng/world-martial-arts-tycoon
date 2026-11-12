@@ -124,7 +124,7 @@ Disciplines.list = {
 		},
 		classes = { "Beginner Judo", "Throwing Techniques", "Groundwork", "Grip Fighting", "Advanced Judo" },
 		outfit = {
-			student = { top = "judogi", topColor = "judogi", bottom = "pants", bottomColor = "match", belt = true, feet = "bare" },
+			student = { top = "judogi", topColor = C.white, bottom = "pants", bottomColor = C.white, belt = true, feet = "bare" },
 			trainer = { top = "judogi", topColor = C.white, bottom = "pants", bottomColor = C.white, belt = true, beltRankMin = 7, feet = "bare" },
 		},
 		bodyTypes = { average = 3, athletic = 3, heavy = 2, kid = 2, slim = 1 },
@@ -269,8 +269,8 @@ Disciplines.list = {
 		},
 		classes = { "Beginner BJJ", "Guard Training", "Grappling", "Submission Techniques", "Advanced BJJ" },
 		outfit = {
-			student = { top = "gi", topColor = "bjjgi", bottom = "pants", bottomColor = "match", belt = true, patches = true, feet = "bare", nogiChance = 0.35 },
-			trainer = { top = "gi", topColor = C.black, trim = C.gold, bottom = "pants", bottomColor = C.black, belt = true, beltRankMin = 5, patches = true, feet = "bare" },
+			student = { top = "gi", topColor = C.white, bottom = "pants", bottomColor = C.white, belt = true, patches = true, feet = "bare", nogiChance = 0.25 },
+			trainer = { top = "gi", topColor = C.white, bottom = "pants", bottomColor = C.white, belt = true, beltRankMin = 5, patches = true, feet = "bare" },
 		},
 		bodyTypes = { average = 4, athletic = 3, heavy = 2, slim = 2 },
 		room = {

@@ -24,7 +24,7 @@ from `MarketplaceService:GetProductInfo`; the `robux` field is only a fallback f
 | premium_decor | Premium Academy Decorations | 199 | statues at reception, +3 satisfaction |
 | bundle_starter | Starter Bundle | 99 | once: 25,000 cash, 300 gems, a Rare trainer |
 | bundle_striker | Striker Cosmetic Bundle | 199 | MMA fight gear outfit |
-| bundle_grappler | Grappler Cosmetic Bundle | 199 | black BJJ gi outfit |
+| bundle_grappler | Grappler Cosmetic Bundle | 199 | BJJ gi with black belt |
 | bundle_traditional | Traditional Masters Bundle | 249 | kung fu suit, crane pose, sakura garden (spring collection, Mar–May) |
 
 ## Developer Products (Monetization → Developer Products)
