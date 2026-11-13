@@ -69,7 +69,7 @@ bugs, which were fixed; v16–v19 have not been played by anyone yet as far as I
 | Inventory / cosmetics | Progress, CosmeticService | WORKING WITH LIMITATIONS | the "no face" report (v18 fix) not yet confirmed by the owner |
 | Leaderboards | LeaderboardService | NOT TESTABLE HERE | OrderedDataStore |
 | Multiplayer | all services | NOT TESTABLE HERE | 8 plots; designed per player |
-| Audio | AudioController, Config/Audio | **NOT IMPLEMENTED live** | all 18 sound ids are 0: the live game is silent. Sounds exist in `assets/audio` |
+| Audio | AudioController, Config/Audio | WORKING WITH LIMITATIONS | 18 sounds uploaded (v21, tools/upload_audio.py); Roblox moderation and playback not yet confirmed in game |
 | Developer menu | Dev panel, DevTools | WORKING WITH LIMITATIONS | tested offline |
 
 ## Known limitations that remain
